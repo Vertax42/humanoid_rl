@@ -1,0 +1,6 @@
+<launch>
+    <!-- 启动节点 -->
+    <node name="joy_stick_node" pkg="joy_stick" type="joy_stick_node" output="screen">
+    </node>
+
+</launch>

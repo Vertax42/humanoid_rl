@@ -1,0 +1,5 @@
+<launch>
+    <!-- 启动节点 -->
+    <node name="humanoid_rl_node" pkg="humanoid_rl" type="humanoid_rl_node" output="screen"/>
+
+</launch>

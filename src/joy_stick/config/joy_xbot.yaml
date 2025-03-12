@@ -1,0 +1,32 @@
+freq: 20
+command_type: hat # joy | hat
+float_pubs:
+  - topic_name: start_control
+    buttons: [7] # Start button
+  - topic_name: zero_mode
+    buttons: [1] # B
+  - topic_name: stand_mode
+    buttons: [0] # A
+  - topic_name: walk_mode
+    buttons: [2] # X
+reset_pubs:
+  - buttons: [3] # Y for reset vel_cmd
+twist_pubs:
+  - topic_name: cmd_vel
+    type: joy
+    buttons: [4]
+    axis:
+      linear_x: 1
+      linear_y: 0
+      angular_z: 3
+  - topic_name: cmd_vel
+    type: hat
+    buttons: [5]
+    axis:
+      linear_x: 7
+      linear_y: 6
+      angular_z: 3
+# service_clients:
+#   - interface_type: std_srvs/Empty
+#     service_name: reset
+#     buttons: [3]

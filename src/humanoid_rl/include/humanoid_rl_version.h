@@ -1,0 +1,11 @@
+#ifndef HUMANOID_RL_VERSION_H
+#define HUMANOID_RL_VERSION_H
+
+// Version information
+#define HUMANOID_RL_VERSION_STRING "1.0.0.1"
+#define HUMANOID_RL_MAJOR 1
+#define HUMANOID_RL_MINOR 0
+#define HUMANOID_RL_PATCH 0
+#define HUMANOID_RL_BUILD 1
+
+#endif // HUMANOID_RL_VERSION_H

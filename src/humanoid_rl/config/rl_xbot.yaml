@@ -1,0 +1,296 @@
+control_frequency: 100
+max_cycle: 720000 # 2 hours for 100hz
+sub_state_machine_start_name: /start_control
+sub_state_machine_zero_name: /zero_mode
+sub_state_machine_stand_name: /stand_mode
+sub_state_machine_walk_name: /walk_mode
+sub_controllers_policy_output_name: /controllers/xbot_controller/policy_output
+sub_controllers_joints_from_bag_name: /RXjoint_states
+pub_controllers_policy_input_name: /policy_input
+pub_controllers_joints_from_bag_name: /xbot_joints_pub
+
+control_conf:
+  observations:
+    sin_phase: 0
+    cos_phase: 1
+    vel_x: 2
+    vel_y: 3
+    ang_vel_yaw: 4
+    pos[0]: 5
+    pos[1]: 6
+    pos[2]: 7
+    pos[3]: 8
+    pos[4]: 9
+    pos[5]: 10
+    pos[6]: 11
+    pos[7]: 12
+    pos[8]: 13
+    pos[9]: 14
+    pos[10]: 15
+    pos[11]: 16
+    vel[0]: 17
+    vel[1]: 18
+    vel[2]: 19
+    vel[3]: 20
+    vel[4]: 21
+    vel[5]: 22
+    vel[6]: 23
+    vel[7]: 24
+    vel[8]: 25
+    vel[9]: 26
+    vel[10]: 27
+    vel[11]: 28
+    last_action[0]: 29
+    last_action[1]: 30
+    last_action[2]: 31
+    last_action[3]: 32
+    last_action[4]: 33
+    last_action[5]: 34
+    last_action[6]: 35
+    last_action[7]: 36
+    last_action[8]: 37
+    last_action[9]: 38
+    last_action[10]: 39
+    last_action[11]: 40
+    base_ang_vel[0]: 41
+    base_ang_vel[1]: 42
+    base_ang_vel[2]: 43
+    base_euler_xyz[0]: 44
+    base_euler_xyz[1]: 45
+    base_euler_xyz[2]: 46
+  actions:
+    left_leg_roll_joint: 0
+    left_leg_yaw_joint: 1
+    left_leg_pitch_joint: 2
+    left_knee_joint: 3
+    left_ankle_pitch_joint: 4
+    left_ankle_roll_joint: 5
+    right_leg_roll_joint: 6
+    right_leg_yaw_joint: 7
+    right_leg_pitch_joint: 8
+    right_knee_joint: 9
+    right_ankle_pitch_joint: 10
+    right_ankle_roll_joint: 11
+  # Leg joints configurations
+  joint_conf:
+    # default joint angles
+    init_state:
+      left_shoulder_pitch_joint: 0.0
+      left_shoulder_roll_joint: 0.0
+      left_arm_yaw_joint: 0.0
+      left_elbow_pitch_joint: 0.0
+      left_elbow_yaw_joint: 0.0
+      left_wrist_roll_joint: 0.0
+      left_wrist_yaw_joint: 0.0
+      neck_yaw_joint: 0.0
+      neck_pitch_joint: 0.0
+      right_shoulder_pitch_joint: 0.0
+      right_shoulder_roll_joint: 0.0
+      right_arm_yaw_joint: 0.0
+      right_elbow_pitch_joint: 0.0
+      right_elbow_yaw_joint: 0.0
+      right_writs_roll_joint: 0.0
+      right_wrist_yaw_joint: 0.0
+      waist_yaw_joint: 0.0
+      waist_roll_joint: 0.0
+      left_leg_roll_joint: 0.0
+      left_leg_yaw_joint: 0.0
+      left_leg_pitch_joint: 0.0
+      left_knee_joint: 0.0
+      left_ankle_pitch_joint: 0.0
+      left_ankle_roll_joint: 0.0
+      right_leg_roll_joint: 0.0
+      right_leg_yaw_joint: 0.0
+      right_leg_pitch_joint: 0.0
+      right_knee_joint: 0.0
+      right_ankle_pitch_joint: 0.0
+      right_ankle_roll_joint: 0.0
+    # PD Driver parameters
+    # KP
+    stiffness:
+      left_shoulder_pitch_joint: 200.
+      left_shoulder_roll_joint: 200.
+      left_arm_yaw_joint: 200.
+      left_elbow_pitch_joint: 200.
+      left_elbow_yaw_joint: 200.
+      left_wrist_roll_joint: 200.
+      left_wrist_yaw_joint: 200.
+      neck_yaw_joint: 400.
+      neck_pitch_joint: 400.
+      right_shoulder_pitch_joint: 200.
+      right_shoulder_roll_joint: 200.
+      right_arm_yaw_joint: 200.
+      right_elbow_pitch_joint: 200.
+      right_elbow_yaw_joint: 200.
+      right_writs_roll_joint: 200.
+      right_wrist_yaw_joint: 200.
+      waist_yaw_joint: 400.
+      waist_roll_joint: 400.
+      left_leg_roll_joint: 200.
+      left_leg_yaw_joint: 200.
+      left_leg_pitch_joint: 350.
+      left_knee_joint: 350.
+      left_ankle_pitch_joint: 15.
+      left_ankle_roll_joint: 15.
+      right_leg_roll_joint: 200.
+      right_leg_yaw_joint: 200.
+      right_leg_pitch_joint: 350.
+      right_knee_joint: 350.
+      right_ankle_pitch_joint: 15.
+      right_ankle_roll_joint: 15.
+    # KD
+    damping:
+      left_shoulder_pitch_joint: 10.
+      left_shoulder_roll_joint: 10.
+      left_arm_yaw_joint: 10.
+      left_elbow_pitch_joint: 10.
+      left_elbow_yaw_joint: 10.
+      left_wrist_roll_joint: 10.
+      left_wrist_yaw_joint: 10.
+      neck_yaw_joint: 10.
+      neck_pitch_joint: 10.
+      right_shoulder_pitch_joint: 10.
+      right_shoulder_roll_joint: 10.
+      right_arm_yaw_joint: 10.
+      right_elbow_pitch_joint: 10.
+      right_elbow_yaw_joint: 10.
+      right_writs_roll_joint: 10.
+      right_wrist_yaw_joint: 10.
+      waist_yaw_joint: 10.
+      waist_roll_joint: 10.
+      left_leg_roll_joint: 10.0
+      left_leg_yaw_joint: 10.0
+      left_leg_pitch_joint: 10.0
+      left_knee_joint: 10.0
+      left_ankle_pitch_joint: 10.0
+      left_ankle_roll_joint: 10.0
+      right_leg_roll_joint: 10.0
+      right_leg_yaw_joint: 10.0
+      right_leg_pitch_joint: 10.0
+      right_knee_joint: 10.0
+      right_ankle_pitch_joint: 10.0
+      right_ankle_roll_joint: 10.0
+    # joint_limits
+    upper_limit:
+      left_shoulder_pitch_joint: 1.4
+      left_shoulder_roll_joint: 0.37
+      left_arm_yaw_joint: 2.09
+      left_elbow_pitch_joint: 2.18
+      left_elbow_yaw_joint: 2.09
+      left_wrist_roll_joint: 1.92
+      left_wrist_yaw_joint: 2.09
+      neck_yaw_joint: 1.57
+      neck_pitch_joint: 0.44
+      right_shoulder_pitch_joint: 3.14
+      right_shoulder_roll_joint: 2.79
+      right_arm_yaw_joint: 2.09
+      right_elbow_pitch_joint: 0.26
+      right_elbow_yaw_joint: 2.09
+      right_writs_roll_joint: 1.92
+      right_wrist_yaw_joint: 2.09
+      waist_yaw_joint: 1.57
+      waist_roll_joint: 0.26
+      left_leg_roll_joint: 1.57
+      left_leg_yaw_joint: 1.05
+      left_leg_pitch_joint: 1.31
+      left_knee_joint: 1.1
+      left_ankle_pitch_joint: 0.87
+      left_ankle_roll_joint: 0.44
+      right_leg_roll_joint: 0.44
+      right_leg_yaw_joint: 1.05
+      right_leg_pitch_joint: 1.57
+      right_knee_joint: 1.05
+      right_ankle_pitch_joint: 0.7
+      right_ankle_roll_joint: 0.44
+    lower_limit:
+      left_shoulder_pitch_joint: -3.14
+      left_shoulder_roll_joint: -2.79
+      left_arm_yaw_joint: -2.09
+      left_elbow_pitch_joint: -0.26
+      left_elbow_yaw_joint: -2.09
+      left_wrist_roll_joint: -1.92
+      left_wrist_yaw_joint: -2.09
+      neck_yaw_joint: -1.57
+      neck_pitch_joint: -0.44
+      right_shoulder_pitch_joint: -1.4
+      right_shoulder_roll_joint: -0.37
+      right_arm_yaw_joint: -2.09
+      right_elbow_pitch_joint: -2.18
+      right_elbow_yaw_joint: -2.09
+      right_writs_roll_joint: -1.92
+      right_wrist_yaw_joint: -2.09
+      waist_yaw_joint: -1.57
+      waist_roll_joint: -0.26
+      left_leg_roll_joint: -0.44
+      left_leg_yaw_joint: -1.05
+      left_leg_pitch_joint: -1.57
+      left_knee_joint: -1.05
+      left_ankle_pitch_joint: -0.7
+      left_ankle_roll_joint: -0.44
+      right_leg_roll_joint: -1.57
+      right_leg_yaw_joint: -1.05
+      right_leg_pitch_joint: -1.31
+      right_knee_joint: -1.1
+      right_ankle_pitch_joint: -0.87
+      right_ankle_roll_joint: -0.44
+    torque_limit:
+      left_shoulder_pitch_joint: 80
+      left_shoulder_roll_joint: 80
+      left_arm_yaw_joint: 50
+      left_elbow_pitch_joint: 50
+      left_elbow_yaw_joint: 50
+      left_wrist_roll_joint: 50
+      left_wrist_yaw_joint: 50
+      neck_yaw_joint: 50
+      neck_pitch_joint: 50
+      right_shoulder_pitch_joint: 80
+      right_shoulder_roll_joint: 80
+      right_arm_yaw_joint: 50
+      right_elbow_pitch_joint: 50
+      right_elbow_yaw_joint: 50
+      right_wrist_roll_joint: 50
+      right_wrist_yaw_joint: 50
+      waist_yaw_joint: 100
+      waist_roll_joint: 100
+      left_leg_roll_joint: 100
+      left_leg_yaw_joint: 100
+      left_leg_pitch_joint: 250
+      left_knee_joint: 250
+      left_ankle_pitch_joint: 100
+      left_ankle_roll_joint: 100
+      right_leg_roll_joint: 100
+      right_leg_yaw_joint: 100
+      right_leg_pitch_joint: 250
+      right_knee_joint: 250
+      right_ankle_pitch_joint: 100
+      right_ankle_roll_joint: 100
+  robot_conf:
+    total_joints_num: 30
+    upper_body_joints_num: 18 # left arm(7) + neck(2) + right arm(7) + waist(2)
+    leg_joints_num: 12 # left leg(6) + right leg(6)
+  inference_conf:
+    model_name: xbot_policy.onnx # model file name
+    sw_mode: True
+    use_lpf: false
+    decimation: 1 # action sample freq_
+    obs_dim: 47 # dimensions of observation space
+    action_dim: 12 # dimensions of action space
+    yaw_history_length: 50 # length of history frames
+    obs_history_length: 66 # length of history observations
+    lin_sensitivity: 0.1 # keyboard command sensivity for linear velocity
+    ang_sensitivity: 0.1 # keyboard command sensivity for angular velocity
+    cycle_time: 0.64 # default cycle_time
+    action_scale: 0.25 # action scale
+    max_action_clip: 18.0
+    min_action_clip: -18.0
+    cmd_threshold: 0.05 # stand mode velocity
+  obs_scales:
+    lin_vel: 1
+    ang_vel: 1
+    dof_pos: 1.
+    dof_vel: 0.05
+    quat: 1.
+  imu_conf:
+    bias_x: 0.089160
+    bias_y: 0.023623
+    bias_z: 0.995166
