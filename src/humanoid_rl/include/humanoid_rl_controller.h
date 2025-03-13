@@ -143,6 +143,7 @@ public:
                                                        std::vector<double> &kp, std::vector<double> &kd,
                                                        std::vector<double> &torque);
 
+
 private:
     void LoadModel();
     void PrintLibtorchModel(const torch::jit::script::Module &model);
@@ -180,6 +181,7 @@ public:
 
     mutable std::shared_mutex cmd_mutex_;
     ros::Subscriber twist_sub_;
+    ros::Subscriber bag_joints_sub_; // subscriber for bag data
     geometry_msgs::Twist cmd_data_;
 
     // bool is_update_{ false };
@@ -244,6 +246,11 @@ public:
     double trans_mode_percentage_ = 0.0;
     double trans_mode_duration_cycle_ = 500.0; // 0.01 * 500 = 5s
     vector_t current_joint_pos_;               // 30 dof, only record when SetMode is called
+
+    // 用于从rosbag获取上肢关节数据
+    // std::unordered_map<int, double> upper_body_joints_from_bag_; // 索引->位置 的映射
+    // bool has_bag_data_ = false;                                  // 标记是否有来自bag的数据
+    // bool use_bag_for_upper_body_ = true;                         // 是否使用bag数据控制上肢
 };
 
 

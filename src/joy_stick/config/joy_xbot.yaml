@@ -14,14 +14,14 @@ reset_pubs:
 twist_pubs:
   - topic_name: cmd_vel
     type: joy
-    buttons: [4]
+    buttons: [4] # left button
     axis:
       linear_x: 1
       linear_y: 0
       angular_z: 3
   - topic_name: cmd_vel
     type: hat
-    buttons: [5]
+    buttons: [5] # right button
     axis:
       linear_x: 7
       linear_y: 6

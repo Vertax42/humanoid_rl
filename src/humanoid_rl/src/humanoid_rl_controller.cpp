@@ -538,9 +538,6 @@ void HumanoidRLController::SetBodyStateData(const std_msgs::Float64MultiArray::C
     }
     data_stamp_++; // 增加数据戳
     data_ready_.store(true);
-    // LOGFMTD("action_name_to_index_ size: %ld", action_name_to_index_.size());
-
-    // zsummer::log4z::ILog4zManager::getRef().setLoggerDisplay(LOG4Z_MAIN_LOGGER_ID, true);
 }
 
 void HumanoidRLController::SetJointStateDataBag(const sensor_msgs::JointState::ConstPtr &msg)
@@ -842,9 +839,6 @@ void HumanoidRLController::HandleWalkMode()
         // LOGD("Use LPF!");
         for(int i = 0; i < control_config_.robot_config.leg_joints_num; i++)
         {
-            // int index =
-            // joint_name_to_index_[control_config_.ordered_joint_names[control_config_.robot_config.upper_body_joints_num
-            // + i]];
             if(i == 4 || i == 5 || i == 10 || i == 11)
             {
                 double tau_des = kp_cmd_[control_config_.robot_config.upper_body_joints_num + i]
@@ -882,8 +876,6 @@ void HumanoidRLController::HandleWalkMode()
                 torque_cmd_[control_config_.robot_config.upper_body_joints_num + i] = 0.0;
             }
             last_actions_(i, 0) = actions_[i];
-            // LOGFMTW("Use LPF! Joint[%d] action: %f", i, actions_[i] *
-            // control_config_.inference_config.action_scale);
         }
     } else
     {
@@ -898,8 +890,6 @@ void HumanoidRLController::HandleWalkMode()
                 = control_config_.joint_conf["damping"][control_config_.ordered_action_names[i]];
             torque_cmd_[control_config_.robot_config.upper_body_joints_num + i] = 0.0;
             last_actions_(i, 0) = actions_[i];
-            // LOGFMTW("No LPF! Joint[%d] action: %f", i, actions_[i] *
-            // control_config_.inference_config.action_scale);
         }
     }
 }
