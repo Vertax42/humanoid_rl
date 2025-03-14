@@ -65,6 +65,8 @@ public:
     ros::Subscriber state_zero_sub_;
     ros::Subscriber state_stand_sub_;
     ros::Subscriber state_walk_sub_;
+    ros::Subscriber state_move_to_fix_pos_sub_;
+    ros::Subscriber state_bag_sub_;
 
 public:
     // callback funcs
@@ -74,6 +76,8 @@ public:
     void stateZeroCallback(const std_msgs::Bool::ConstPtr &msg);           // zero
     void stateStandCallback(const std_msgs::Bool::ConstPtr &msg);          // stand
     void stateWalkCallback(const std_msgs::Bool::ConstPtr &msg);           // walk
+    void stateToFixPosCallback(const std_msgs::Bool::ConstPtr &msg);      // arm_motion
+    void stateBagPlayCallback(const std_msgs::Bool::ConstPtr &msg);        // bag_play
 
     std::string stateToString(ControlState state);
     //   [zero]←--→[stand]

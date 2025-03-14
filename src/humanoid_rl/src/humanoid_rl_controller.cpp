@@ -809,6 +809,210 @@ void HumanoidRLController::HandleStandMode()
     cycle_count_ = 0;
 }
 
+
+void HumanoidRLController::HandlePlayBag(ros::Time current_time)
+{
+    if(is_first_play)
+    {
+        try
+        {
+            rosbag::Bag bag;
+            bag.open(control_config_.ros_bag.bag_path, rosbag::bagmode::Read);
+            std::vector<std::string> topics = { "/joint_states" };
+            rosbag::View view(bag, rosbag::TopicQuery(topics));
+            for(const rosbag::MessageInstance &msg : view)
+            {
+                if(msg.isType<sensor_msgs::JointState>())
+                {
+                    sensor_msgs::JointState::ConstPtr joint_state = msg.instantiate<sensor_msgs::JointState>();
+                    joint_state_msgs.emplace_back(msg.getTime(), joint_state);
+                }
+            }
+            if(!joint_state_msgs.empty())
+            {
+                initial_bag_start_time = joint_state_msgs.front().first; // 记录第一个消息的时间戳
+            } else
+            {
+                LOGFMTA("Bag文件中无有效消息");
+                return;
+            }
+            arm_positions.clear();       
+            for(int i = control_config_.left_arm_index ; 
+            i < control_config_.left_arm_index + 7; i++)
+            {
+                arm_positions[control_config_.ordered_joint_names[i]] = 0 ;
+            }
+            for(int i = control_config_.right_arm_index ; 
+            i < control_config_.right_arm_index + 7; i++)
+            {
+                arm_positions[control_config_.ordered_joint_names[i-control_config_.right_arm_index]] = 0 ;
+            }
+            bag.close();
+            is_first_play = false;
+            initial_record_time = current_time;
+        } catch(rosbag::BagException &e)
+        {
+            LOGFMTA("Failed to open bag: %s", e.what());
+            return;
+        }
+    }
+    if(!bag_play_end)
+    {
+        ros::Duration elapsed_time = (current_time - initial_record_time) * control_config_.ros_bag.play_rate;
+        ros::Time target_time = initial_bag_start_time + elapsed_time;
+
+        // 定义二分查找的比较函数
+        auto compare = [](const auto &pair, const ros::Time &time) { return pair.first < time; };
+
+        // 使用 lower_bound 查找第一个不小于目标时间的消息
+        auto it = std::lower_bound(joint_state_msgs.begin(), joint_state_msgs.end(), target_time, compare);
+
+        if(it == joint_state_msgs.end())
+        {
+            it = joint_state_msgs.end() - 1; // 取最后一个消息
+            bag_play_end = true;
+        } else if(it != joint_state_msgs.begin())
+        {
+            auto prev_it = it - 1;
+            if((target_time - prev_it->first) < (it->first - target_time))
+            {
+                it = prev_it;
+            }
+        }
+
+        // 输出结果
+        const auto &[stamp, joint_state] = *it;
+        for(size_t i = 0; i < joint_state->name.size(); ++i)
+        {
+            const auto &name = joint_state->name[i];
+            const double pos = joint_state->position[i];
+            if(arm_positions.find(name) != arm_positions.end())
+            {
+                arm_positions[name] = pos;
+            }
+        }
+        // left_arm
+        for(int i = control_config_.left_arm_index ; 
+            i < control_config_.left_arm_index + 7; i++)
+        {
+            pos_des_cmd_[i] = arm_positions[control_config_.ordered_joint_names[i]];
+            vel_des_cmd_[i] = 0.0;
+            kp_cmd_[i] = control_config_.arm_move_conf["arm_move_kp"][control_config_.ordered_arm_names[i]];
+            kd_cmd_[i] = control_config_.arm_move_conf["arm_move_kd"][control_config_.ordered_arm_names[i]];
+            torque_cmd_[i] = 0.0;
+        }
+        // right_arm
+        for(int i = control_config_.right_arm_index;
+            i < control_config_.right_arm_index + 7; i++)
+        {
+            pos_des_cmd_[i] = arm_positions[control_config_.ordered_joint_names[i]];
+            vel_des_cmd_[i] = 0.0;
+            kp_cmd_[i] = control_config_.arm_move_conf["arm_move_kp"][control_config_.ordered_arm_names[i-control_config_.right_arm_index]];
+            kd_cmd_[i] = control_config_.arm_move_conf["arm_move_kd"][control_config_.ordered_arm_names[i-control_config_.right_arm_index]];
+            torque_cmd_[i] = 0.0;
+        }
+    } else
+    {
+        if(bag_cycle > 0)
+        {
+            bag_cycle--;
+            // left_arm2zero
+            for(int i = control_config_.left_arm_index ; 
+                i < control_config_.left_arm_index + 7; i++)
+            {
+                double ratio = static_cast<double>(bag_cycle) / bag_totle_cycle;
+                pos_des_cmd_[i] = arm_positions[control_config_.ordered_joint_names[i]] * ratio;
+                vel_des_cmd_[i] = 0.0;
+                kp_cmd_[i] = control_config_.arm_move_conf["arm_move_kp"][control_config_.ordered_arm_names[i]];
+                kd_cmd_[i] = control_config_.arm_move_conf["arm_move_kd"][control_config_.ordered_arm_names[i]];
+                torque_cmd_[i] = 0.0;
+            }
+
+            // right_arm2zero
+            for(int i = control_config_.right_arm_index;
+                i < control_config_.right_arm_index + 7; i++)
+            {
+                double ratio = static_cast<double>(bag_cycle) / bag_totle_cycle;
+                pos_des_cmd_[i] = arm_positions[control_config_.ordered_joint_names[i]] * ratio;
+                vel_des_cmd_[i] = 0.0;
+                kp_cmd_[i] = control_config_.arm_move_conf["arm_move_kp"][control_config_.ordered_arm_names[i-control_config_.right_arm_index]];
+                kd_cmd_[i] = control_config_.arm_move_conf["arm_move_kd"][control_config_.ordered_arm_names[i-control_config_.right_arm_index]];
+                torque_cmd_[i] = 0.0;
+            }
+        } else
+        {
+            bag_play_end = false;
+            play_bag = false;
+            bag_cycle = bag_totle_cycle;
+            is_first_play = true;
+        }
+    }
+}
+
+int HumanoidRLController::armStateGet(bool move_to_fix_pos, bool play_bag)
+{
+    if (move_to_fix_pos && !play_bag) return ArmState::MovingToFixPos;
+    if (!move_to_fix_pos && !play_bag) return ArmState::FixPos2Zero;
+    if (play_bag && !move_to_fix_pos) return ArmState::PlayBag;
+    return ArmState::Zero;
+}
+
+void HumanoidRLController::armStateSet()
+{
+    int current_state = armStateGet(move_to_fix_pos, play_bag);
+    switch (current_state) 
+    {
+        case ArmState::MovingToFixPos:
+        {
+            move_to_fix_pos_cycle = move_to_fix_pos_cycle < move_to_fix_pos_totle_cycle ? move_to_fix_pos_cycle + 1 : move_to_fix_pos_totle_cycle;
+            for(int i = control_config_.right_arm_index;
+                i < control_config_.right_arm_index + 7; i++)
+            {
+                double ratio = static_cast<double>(move_to_fix_pos_cycle) / move_to_fix_pos_totle_cycle;
+                pos_des_cmd_[i] = control_config_.arm_move_conf["arm_move_joints"][control_config_.ordered_arm_names[i-control_config_.right_arm_index]] * ratio;
+                vel_des_cmd_[i] = 0.0;
+                kp_cmd_[i] = control_config_.arm_move_conf["arm_move_kd"][control_config_.ordered_arm_names[i-control_config_.right_arm_index]];
+                kd_cmd_[i] = control_config_.arm_move_conf["arm_move_kp"][control_config_.ordered_arm_names[i-control_config_.right_arm_index]];
+                torque_cmd_[i] = 0.0;
+            }
+            break;
+        }
+        case ArmState::FixPos2Zero:
+        {
+            move_to_fix_pos_cycle = move_to_fix_pos_cycle > 0 ? move_to_fix_pos_cycle - 1 : 0;
+            for(int i = control_config_.right_arm_index;
+            i < control_config_.right_arm_index + 7; i++)
+            {
+                double ratio = static_cast<double>(move_to_fix_pos_cycle) / move_to_fix_pos_totle_cycle;
+                pos_des_cmd_[i] = control_config_.arm_move_conf["arm_move_joints"][control_config_.ordered_arm_names[i-control_config_.right_arm_index]] * ratio;
+                vel_des_cmd_[i] = 0.0;
+                kp_cmd_[i] = control_config_.arm_move_conf["arm_move_kd"][control_config_.ordered_arm_names[i-control_config_.right_arm_index]];
+                kd_cmd_[i] = control_config_.arm_move_conf["arm_move_kp"][control_config_.ordered_arm_names[i-control_config_.right_arm_index]];
+                torque_cmd_[i] = 0.0;
+            }
+            break;
+        }
+        case ArmState::PlayBag:
+        {
+            if(is_first_play)
+            initial_record_time = ros::Time::now(); 
+            ros::Time current_time = ros::Time::now();
+            HandlePlayBag(current_time);
+            break;
+        }
+        case ArmState::Zero:
+        {
+            bag_play_end = false;
+            play_bag = false;
+            bag_cycle = bag_totle_cycle;
+            is_first_play = true;
+            break;
+        }
+    }
+}
+
+
+
 void HumanoidRLController::HandleWalkMode()
 {
     // LOGD("Walk mode++++++++++++++++++++++++");
@@ -879,6 +1083,7 @@ void HumanoidRLController::HandleWalkMode()
         }
     } else
     {
+        armStateSet();
         for(int i = 0; i < control_config_.robot_config.leg_joints_num; i++)
         {
             pos_des_cmd_[control_config_.robot_config.upper_body_joints_num + i]

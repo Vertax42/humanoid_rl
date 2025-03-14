@@ -185,6 +185,81 @@ void HumanoidRLInference::stateWalkCallback(const std_msgs::Bool::ConstPtr &msg)
     }
 }
 
+void HumanoidRLInference::stateToFixPosCallback(const std_msgs::Bool::ConstPtr &msg)
+{
+    if(!Throttler(std::chrono::high_resolution_clock::now(), last_set_stand_time_, 1000ms))
+    {
+        // LOGE("State stand change throttled, ignoring reques t!");
+        return;
+    }
+    if(rl_controller_->GetMode() == ControlState::ZERO)
+    {
+        LOGW("Not in WALK0 state!");
+    } else if(rl_controller_->GetMode() == ControlState::WALK)
+    {
+        double cmd_norm
+            = std::sqrt(Square(rl_controller_->cmd_data_.linear.x) + Square(rl_controller_->cmd_data_.linear.y)
+                        + Square(rl_controller_->cmd_data_.angular.z));
+        if(cmd_norm <= rl_controller_->control_config_.inference_config.cmd_threshold && msg->data)
+        {
+            LOGW("In WALK0 State! Start Move Arm");
+            rl_controller_->move_to_fix_pos = true;
+        } else
+        {
+            LOGW("Stop Move Arm!");
+            rl_controller_->move_to_fix_pos = false;
+        }
+        // printf("Arm shake: %s\n", rl_controller_->move_to_fix_pos ? "true" : "false"); // 转换为字符串
+    } else if(rl_controller_->GetMode() == ControlState::STAND)
+    {
+        LOGW("Not in WALK0 state!");
+    } else
+    {
+        std::string current_state = stateToString(rl_controller_->GetMode());
+        LOGFMTW("Iilegal state transition: [%s] -> [STAND]", current_state.c_str());
+        LOGW("Keep the current state!");
+        LOGFMTW("[%s] -> [%s]", current_state.c_str(), current_state.c_str());
+    }
+}
+
+void HumanoidRLInference::stateBagPlayCallback(const std_msgs::Bool::ConstPtr &msg)
+{
+    if(!Throttler(std::chrono::high_resolution_clock::now(), last_set_stand_time_, 1000ms))
+    {
+        // LOGE("State stand change throttled, ignoring request!");
+        return;
+    }
+    if(rl_controller_->GetMode() == ControlState::ZERO)
+    {
+        LOGW("Not in WALK0 state!");
+    } else if(rl_controller_->GetMode() == ControlState::WALK)
+    {
+        double cmd_norm
+            = std::sqrt(Square(rl_controller_->cmd_data_.linear.x) + Square(rl_controller_->cmd_data_.linear.y)
+                        + Square(rl_controller_->cmd_data_.angular.z));
+        if(cmd_norm <= rl_controller_->control_config_.inference_config.cmd_threshold && msg->data)
+        {
+            LOGW("In WALK0 State! Start Play Bag");
+            rl_controller_->play_bag = true;
+        }
+        // else
+        // {
+        //     LOGW("Stop Play Bag!");
+        //     rl_controller_->arm_shake = false;
+        // }
+        // printf("Arm shake: %s\n", rl_controller_->move_to_fix_pos ? "true" : "false"); // 转换为字符串
+    } else if(rl_controller_->GetMode() == ControlState::STAND)
+    {
+        LOGW("Not in WALK0 state!");
+    } else
+    {
+        std::string current_state = stateToString(rl_controller_->GetMode());
+        LOGFMTW("Iilegal state transition: [%s] -> [STAND]", current_state.c_str());
+        LOGW("Keep the current state!");
+        LOGFMTW("[%s] -> [%s]", current_state.c_str(), current_state.c_str());
+    }
+}
+
 bool HumanoidRLInference::InitSubscribers(YAML::Node &cfg_node)
 {
     try
@@ -214,6 +289,11 @@ bool HumanoidRLInference::InitSubscribers(YAML::Node &cfg_node)
         state_walk_sub_ = nh_.subscribe(cfg_node["sub_state_machine_walk_name"].as<std::string>(), 1,
                                         &HumanoidRLInference::stateWalkCallback, this);
 
+        state_move_to_fix_pos_sub_ = nh_.subscribe(cfg_node["sub_state_machine_shake_hand_name"].as<std::string>(), 1,
+                                         &HumanoidRLInference::stateToFixPosCallback, this);
+
+        state_bag_sub_ = nh_.subscribe(cfg_node["sub_state_machine_bag_name"].as<std::string>(), 1,
+                                       &HumanoidRLInference::stateBagPlayCallback, this);
         LOGD("Successfully initialized all subscribers!");
         return true;
     } catch(const std::exception &e)
@@ -261,6 +341,28 @@ bool HumanoidRLInference::Init()
         control_conf.joint_conf["torque_limit"]
             = cfg_node["control_conf"]["joint_conf"]["torque_limit"].as<std::map<std::string, double> >();
         LOGD("Loaded joint_conf");
+
+        // ros_bag
+        control_conf.ros_bag.bag_path = package_path + "/bag/" + cfg_node["ros_bag_path"].as<std::string>();
+        control_conf.ros_bag.play_rate = cfg_node["ros_bag_rate"].as<int>();
+        control_conf.left_arm_index = cfg_node["control_conf"]["arm_move_conf"]["arm_index"]["left_arm_index"].as<int>();
+        control_conf.right_arm_index = cfg_node["control_conf"]["arm_move_conf"]["arm_index"]["right_arm_index"].as<int>();
+        printf("control_conf.left_arm_index:%d\n",control_conf.left_arm_index);
+        printf("control_conf.right_arm_index:%d\n",control_conf.right_arm_index);
+
+        control_conf.arm_move_conf["arm_move_joints"]
+            = cfg_node["control_conf"]["arm_move_conf"]["arm_move_joints"].as<std::map<std::string, double> >();
+        control_conf.arm_move_conf["arm_move_kp"]
+            = cfg_node["control_conf"]["arm_move_conf"]["arm_move_kp"].as<std::map<std::string, double> >();
+        control_conf.arm_move_conf["arm_move_kd"]
+            = cfg_node["control_conf"]["arm_move_conf"]["arm_move_kd"].as<std::map<std::string, double> >();
+       
+        for(auto iter = cfg_node["control_conf"]["arm_move_conf"]["arm_move_joints"].begin(); 
+                 iter != cfg_node["control_conf"]["arm_move_conf"]["arm_move_joints"].end();
+                 iter++)
+        {
+            control_conf.ordered_arm_names.push_back(iter->first.as<std::string>());
+        }
 
         // ordered_obs_names
         control_conf.ordered_obs_names.clear();

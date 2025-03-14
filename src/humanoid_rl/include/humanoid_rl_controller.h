@@ -32,6 +32,9 @@
 #include <geometry_msgs/Twist.h>
 #include <mutex>
 #include <ros/ros.h>
+#include <rosbag/bag.h>
+#include <rosbag/query.h> // TopicQuery 所需
+#include <rosbag/view.h>
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Float64MultiArray.h>
 #include <std_msgs/String.h>
@@ -100,15 +103,25 @@ struct ControlConfig {
         double bias_z;
     };
 
+    struct RosBag {
+        std::string bag_path;
+        int play_rate;
+    };
+
     // joint_conf["init_state"/"stiffness"/"damping"][joint_name]
-    std::vector<std::string> ordered_obs_names;                       // observation names in order
-    std::vector<std::string> ordered_action_names;                    // action names in order
-    std::vector<std::string> ordered_joint_names;                     // joint names in order
-    std::map<std::string, std::map<std::string, double> > joint_conf; // joint configuration
-    ObsConfig obs_config;                                             // observation configuration
-    RobotConfig robot_config;                                         // robot configuration
-    InfrenceConfig inference_config;                                  // inference configuration
-    ImuConfig imu_config;                                             // imu configuration
+    std::vector<std::string> ordered_obs_names;                         // observation names in order
+    std::vector<std::string> ordered_action_names;                      // action names in order
+    std::vector<std::string> ordered_joint_names;                       // joint names in order
+    std::vector<std::string> ordered_arm_names;                         // arm joint names in order
+    std::map<std::string, std::map<std::string, double> > joint_conf;   // joint configuration
+    std::map<std::string, std::map<std::string, double> > arm_move_conf;// arm_move_conf 
+    ObsConfig obs_config;                                               // observation configuration
+    RobotConfig robot_config;                                           // robot configuration
+    InfrenceConfig inference_config;                                    // inference configuration
+    ImuConfig imu_config;                                               // imu configuration
+    RosBag ros_bag;                                                     // ros bag play
+    int left_arm_index;
+    int right_arm_index;
 };
 
 namespace {
@@ -154,12 +167,17 @@ private:
     void HandleZeroMode();
     void HandleStandMode();
     void HandleWalkMode();
+    void HandlePlayBag(ros::Time current_time);
+
     std::string StateToString(ControlState state);
 
     void UpdateStateEstimation();
     void ComputeObservation();
     void ComputeAction();
     void ComputeTorque();
+
+    int armStateGet(bool move_to_fix_pos, bool play_bag);
+    void armStateSet();
 
     // legcay
     std::array<double, 3> quat_rotate_inverse(const std::array<double, 4> &quat, const std::array<double, 3> &vel);
@@ -247,10 +265,28 @@ public:
     double trans_mode_duration_cycle_ = 500.0; // 0.01 * 500 = 5s
     vector_t current_joint_pos_;               // 30 dof, only record when SetMode is called
 
-    // 用于从rosbag获取上肢关节数据
-    // std::unordered_map<int, double> upper_body_joints_from_bag_; // 索引->位置 的映射
-    // bool has_bag_data_ = false;                                  // 标记是否有来自bag的数据
-    // bool use_bag_for_upper_body_ = true;                         // 是否使用bag数据控制上肢
+
+public:
+    enum ArmState {
+        MovingToFixPos,
+        FixPos2Zero,
+        PlayBag,
+        Zero
+    };
+    bool move_to_fix_pos = false;
+    int  move_to_fix_pos_cycle = 0;
+    int  move_to_fix_pos_totle_cycle = 150;
+
+public:
+    bool play_bag = false;
+    bool bag_play_end = false;
+    ros::Time initial_record_time;
+    bool is_first_play = true;
+    std::vector<std::pair<ros::Time, sensor_msgs::JointState::ConstPtr> > joint_state_msgs;
+    ros::Time initial_bag_start_time; // 记录 rosbag 的起始时间
+    int bag_totle_cycle = 50;
+    int bag_cycle = bag_totle_cycle;
+    std::map<std::string, double > arm_positions;
 };
 
 
