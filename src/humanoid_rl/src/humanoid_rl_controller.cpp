@@ -122,6 +122,10 @@ HumanoidRLController::HumanoidRLController(ros::NodeHandle &nh, const ControlCon
         }
         LOGFMTI("Onnx model warmup completed");
     }
+
+    bag_seq_
+        = std::make_unique<HumanoidRLBag>(control_config_.bag_config.bag_name, control_config_.bag_config.bag_topic,
+                                          control_config_.bag_config.bag_rate); // bag sequence object
 }
 
 HumanoidRLController::~HumanoidRLController() { LOGD("HumanoidRLController object has been destroyed!"); }
@@ -194,32 +198,6 @@ void HumanoidRLController::LoadModel()
             throw std::runtime_error("Failed to create onnx session: " + std::string(e.what()));
         }
         PrintOnnxModel(session_ptr_);
-
-        // Warmup the ONNX model with 100 forward passes
-        LOGFMTI("Warming up ONNX model with 100 forward passes...");
-        std::vector<float> warmup_input(
-            control_config_.inference_config.obs_dim * control_config_.inference_config.obs_history_length, 0.0f);
-
-        // Create input tensor
-        Ort::Value input_tensor = Ort::Value::CreateTensor<float>(
-            memory_info_, warmup_input.data(), warmup_input.size(), input_shapes_[0].data(), input_shapes_[0].size());
-
-        // Perform warmup
-        for(int i = 0; i < 100; i++) // warmup
-        {
-            try
-            {
-                std::vector<Ort::Value> output_tensor
-                    = session_ptr_->Run(Ort::RunOptions{}, input_names_.data(), &input_tensor, 1, output_names_.data(),
-                                        output_names_.size());
-            } catch(const Ort::Exception &e)
-            {
-                LOGFMTE("ONNX warmup failed: %s", e.what());
-                // Continue with execution even if warmup fails
-                break;
-            }
-        }
-        LOGFMTI("ONNX model warmup completed");
     } else
     {
         LOGFMTE("Loaded model from: %s failed!", control_config_.inference_config.model_path.c_str());

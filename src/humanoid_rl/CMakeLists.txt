@@ -15,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   roslib
+  rosbag
+  sensor_msgs
 )
 
 find_package(yaml-cpp REQUIRED)
@@ -29,7 +31,7 @@ set(ONNXRUNTIME_LIB_DIR "/usr/local/lib")
 # Catkin-specific configuration
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS rospy roscpp geometry_msgs std_msgs
+  CATKIN_DEPENDS rospy roscpp geometry_msgs std_msgs sensor_msgs rosbag
 )
 
 # Include directories
@@ -47,6 +49,7 @@ add_executable(${PROJECT_NAME}_node
   src/humanoid_rl_inference.cpp
   src/humanoid_rl_controller.cpp
   src/humanoid_utils.cpp
+  src/humanoid_rl_bag.cpp
   include/common_tools/log4z.cpp
   include/common_tools/utils_common.cpp
 )

@@ -25,6 +25,7 @@
 #ifndef HUMANOID_RL_CONTROLLER_H
 #define HUMANOID_RL_CONTROLLER_H
 
+#include "humanoid_rl_bag.h"
 #include "humanoid_rl_version.h"
 #include "humanoid_utils.h"
 #include "utils_common.h"
@@ -61,12 +62,6 @@ struct EulerAngle {
 };
 
 struct ControlConfig {
-    struct RobotConfig {
-        int total_joints_num;
-        int upper_body_joints_num;
-        int leg_joints_num;
-    };
-
     struct InfrenceConfig {
         InferenceType inference_type;
         std::string model_path;
@@ -86,6 +81,19 @@ struct ControlConfig {
         double cmd_threshold;
     };
 
+    struct RobotConfig {
+        int total_joints_num;
+        int arm_joints_num;
+        int upper_body_joints_num;
+        int leg_joints_num;
+    };
+
+    struct BagConfig {
+        std::string bag_name;
+        std::string bag_topic;
+        double bag_rate;
+    };
+
     struct ObsConfig {
         double lin_vel;
         double ang_vel;
@@ -103,10 +111,12 @@ struct ControlConfig {
     // joint_conf["init_state"/"stiffness"/"damping"][joint_name]
     std::vector<std::string> ordered_obs_names;                       // observation names in order
     std::vector<std::string> ordered_action_names;                    // action names in order
+    std::vector<std::string> ordered_arm_joint_names;                 // arm joint names in order
     std::vector<std::string> ordered_joint_names;                     // joint names in order
     std::map<std::string, std::map<std::string, double> > joint_conf; // joint configuration
     ObsConfig obs_config;                                             // observation configuration
     RobotConfig robot_config;                                         // robot configuration
+    BagConfig bag_config;                                             // bag configuration
     InfrenceConfig inference_config;                                  // inference configuration
     ImuConfig imu_config;                                             // imu configuration
 };
@@ -247,10 +257,8 @@ public:
     double trans_mode_duration_cycle_ = 500.0; // 0.01 * 500 = 5s
     vector_t current_joint_pos_;               // 30 dof, only record when SetMode is called
 
-    // 用于从rosbag获取上肢关节数据
-    // std::unordered_map<int, double> upper_body_joints_from_bag_; // 索引->位置 的映射
-    // bool has_bag_data_ = false;                                  // 标记是否有来自bag的数据
-    // bool use_bag_for_upper_body_ = true;                         // 是否使用bag数据控制上肢
+    // load bag data
+    std::unique_ptr<HumanoidRLBag> bag_seq_;
 };
 
 

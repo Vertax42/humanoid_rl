@@ -230,6 +230,7 @@ bool HumanoidRLInference::Init()
         LOGI("Attempting to load YAML config file...");
         std::string package_path = ros::package::getPath("humanoid_rl");
         std::string config_path = package_path + "/config/rl_xbot.yaml";
+        std::string bag_path = package_path + "/bag/";
         LOGFMTI("Config path: %s", config_path.c_str());
 
         // 检查文件是否存在
@@ -288,13 +289,37 @@ bool HumanoidRLInference::Init()
             control_conf.ordered_joint_names.push_back(iter->first.as<std::string>());
         }
         LOGD("Loaded ordered_joint_names");
+
+        // ordered_arm_joint_names
+        control_conf.ordered_arm_joint_names.clear();
+        for(auto iter = cfg_node["control_conf"]["joint_conf"]["init_state"].begin();
+            iter != cfg_node["control_conf"]["joint_conf"]["init_state"].end(); iter++)
+        {
+            if(isArmJoint(iter->first.as<std::string>()))
+            {
+                control_conf.ordered_arm_joint_names.push_back(iter->first.as<std::string>());
+                // LOGFMTD("Arm joint name: %s", iter->first.as<std::string>().c_str());
+            }
+        }
+
+        LOGD("Loaded ordered_arm_joint_names");
+        // ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
         // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ robot_conf ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
         control_conf.robot_config.total_joints_num
             = cfg_node["control_conf"]["robot_conf"]["total_joints_num"].as<int>();
+        control_conf.robot_config.arm_joints_num = cfg_node["control_conf"]["robot_conf"]["arm_joints_num"].as<int>();
         control_conf.robot_config.upper_body_joints_num
             = cfg_node["control_conf"]["robot_conf"]["upper_body_joints_num"].as<int>();
         control_conf.robot_config.leg_joints_num = cfg_node["control_conf"]["robot_conf"]["leg_joints_num"].as<int>();
         LOGD("Loaded robot_config");
+        // ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
+        // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ bag_conf ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+        control_conf.bag_config.bag_name
+            = bag_path + cfg_node["control_conf"]["bag_conf"]["bag_name"].as<std::string>();
+        control_conf.bag_config.bag_topic = cfg_node["control_conf"]["bag_conf"]["bag_topic"].as<std::string>();
+        control_conf.bag_config.bag_rate = cfg_node["control_conf"]["bag_conf"]["bag_rate"].as<double>();
+        LOGD("Loaded bag_config");
+        // ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
         // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ inference_conf ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
         std::string model_name = cfg_node["control_conf"]["inference_conf"]["model_name"].as<std::string>();
         if(model_name.find(".pt") != std::string::npos || model_name.find(".jit") != std::string::npos)
@@ -343,7 +368,7 @@ bool HumanoidRLInference::Init()
         control_conf.obs_config.dof_vel = cfg_node["control_conf"]["obs_scales"]["dof_vel"].as<double>();
         control_conf.obs_config.quat = cfg_node["control_conf"]["obs_scales"]["quat"].as<double>();
         LOGD("Loaded obs_config");
-
+        // ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
         // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ imu_conf ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
         control_conf.imu_config.bias_x = cfg_node["control_conf"]["imu_conf"]["bias_x"].as<double>();
         control_conf.imu_config.bias_y = cfg_node["control_conf"]["imu_conf"]["bias_y"].as<double>();
@@ -441,10 +466,19 @@ bool HumanoidRLInference::PrintControlConfig(const ControlConfig &config)
               << std::endl;
 
     LOGD("=============================================================");
+
+    LOGD("Loaded arm joint names:");
+    for(size_t i = 0; i < config.ordered_arm_joint_names.size(); ++i)
+    {
+        LOGFMTD("Arm joint name: %s, index: %ld", config.ordered_arm_joint_names[i].c_str(), i);
+    }
+    LOGD("=============================================================");
+
     LOGD("Loaded robot configuration:");
     LOGFMTD("  Total joints number: %d", config.robot_config.total_joints_num);
     LOGFMTD("  Upper body joints number: %d", config.robot_config.upper_body_joints_num);
     LOGFMTD("  Leg joints number: %d", config.robot_config.leg_joints_num);
+    LOGFMTD("  Arm joints number: %d", config.robot_config.arm_joints_num);
     LOGD("=============================================================");
 
     std::cout << ANSI_COLOR_BLUE_BOLD << std::endl;
@@ -453,6 +487,22 @@ bool HumanoidRLInference::PrintControlConfig(const ControlConfig &config)
     std::cout << "    Total joints number: " << config.robot_config.total_joints_num << std::endl;
     std::cout << "    Upper body joints number: " << config.robot_config.upper_body_joints_num << std::endl;
     std::cout << "    Leg joints number: " << config.robot_config.leg_joints_num << std::endl;
+    std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << ANSI_COLOR_RESET
+              << std::endl;
+
+    LOGD("=============================================================");
+    LOGD("Loaded bag configuration:");
+    LOGFMTD("  Bag name: %s", config.bag_config.bag_name.c_str());
+    LOGFMTD("  Bag topic: %s", config.bag_config.bag_topic.c_str());
+    LOGFMTD("  Bag rate: %f", config.bag_config.bag_rate);
+    LOGD("=============================================================");
+
+    std::cout << ANSI_COLOR_RED_BOLD << std::endl;
+    std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+    std::cout << "Loaded bag configuration:" << std::endl;
+    std::cout << "    Bag name: " << config.bag_config.bag_name << std::endl;
+    std::cout << "    Bag topic: " << config.bag_config.bag_topic << std::endl;
+    std::cout << "    Bag rate: " << config.bag_config.bag_rate << std::endl;
     std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << ANSI_COLOR_RESET
               << std::endl;
 
@@ -629,9 +679,7 @@ int main(int argc, char **argv)
         LOGFMTI("Cycle processing time: %.3f ms, humanoid robot is now in %s mode",
                 std::chrono::duration_cast<std::chrono::microseconds>(duration_time).count() / 1000.0,
                 current_state.c_str());
-        // std::cout << "Cycle processing time: " << micro_sec / 1000.0 << " ms, humanoid robot is now in "
-        //           << current_state.c_str() << " mode." << std::endl;
-        // auto duration = std::chrono::high_resolution_clock::now() - cycle_start_time;
+
         auto sleep_time = std::chrono::microseconds(1000000 / rl_inference.freq_) - duration_time;
         if(sleep_time > std::chrono::microseconds::zero())
         {

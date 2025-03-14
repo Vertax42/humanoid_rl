@@ -115,3 +115,19 @@ void digital_lp_filter<T>::init(T init_data)
 
 template class digital_lp_filter<double>;
 template class digital_lp_filter<float>;
+
+bool isArmJoint(const std::string &joint_name)
+{
+    // keywords for arm joints
+    static const std::vector<std::string> ARM_KEYWORDS = { "shoulder", "arm", "elbow", "wrist" };
+
+    // check if the joint name contains any of the keywords
+    for(const auto &keyword : ARM_KEYWORDS)
+    {
+        if(joint_name.find(keyword) != std::string::npos)
+        {
+            return true;
+        }
+    }
+    return false;
+}

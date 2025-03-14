@@ -153,4 +153,7 @@ Eigen::Matrix<SCALAR_T, 3, 1> QuatToXyz(const Eigen::Quaternion<SCALAR_T> &q)
     return xyz;
 }
 
+bool isArmJoint(const std::string &joint_name);
+
 #endif // HUMANOID_UTILS_H
+
