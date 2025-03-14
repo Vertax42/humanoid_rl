@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   roslib
+  rosbag
 )
 
 find_package(yaml-cpp REQUIRED)

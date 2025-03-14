@@ -4,10 +4,14 @@ sub_state_machine_start_name: /start_control
 sub_state_machine_zero_name: /zero_mode
 sub_state_machine_stand_name: /stand_mode
 sub_state_machine_walk_name: /walk_mode
+sub_state_machine_shake_hand_name: /move_to_fix_pos_mode
+sub_state_machine_bag_name: /play_bag_mode
 sub_controllers_policy_output_name: /controllers/xbot_controller/policy_output
 sub_controllers_joints_from_bag_name: /RXjoint_states
 pub_controllers_policy_input_name: /policy_input
 pub_controllers_joints_from_bag_name: /xbot_joints_pub
+ros_bag_path: left_bye.bag
+ros_bag_rate: 1
 
 control_conf:
   observations:
@@ -294,3 +298,31 @@ control_conf:
     bias_x: 0.089160
     bias_y: 0.023623
     bias_z: 0.995166
+  arm_move_conf:
+    arm_index:
+      left_arm_index: 0 
+      right_arm_index: 9
+    arm_move_joints:
+      shoulder_pitch_joint: 0.5
+      shoulder_roll_joint: 0.0
+      arm_yaw_joint: 0.0
+      elbow_pitch_joint: -0.5
+      elbow_yaw_joint: -0.0
+      wrist_roll_joint: -0.6
+      wrist_yaw_joint: 0.0
+    arm_move_kp:
+      shoulder_pitch_joint_kd: 50.0
+      shoulder_roll_joint_kd: 300.0
+      arm_yaw_joint_kd: 300.0
+      elbow_pitch_joint_kd: 50.0
+      elbow_yaw_joint_kd: 300.00
+      wrist_roll_joint_kd: 50.0
+      wrist_yaw_joint_kd: 50.0
+    arm_move_kd:
+      shoulder_pitch_joint_kp: 5.0
+      shoulder_roll_joint_kp: 10.0
+      arm_yaw_joint_kp: 10.0
+      elbow_pitch_joint_kp: 5.0
+      elbow_yaw_joint_kp: 10.00
+      wrist_roll_joint_kp: 5.0
+      wrist_yaw_joint_kp: 10.0
