@@ -270,7 +270,7 @@ public:
     bool use_bag_for_upper_body_{ false };
 
     // reach dest joint
-    vector_t current_arm_joint_pos_; // 14 dof
+    vector_t current_upper_body_joint_pos_; // 18 dof
     double dest_joint_mode_percentage_ = 0.0;
     bool reach_dest_joint_{ false };
 };

@@ -128,7 +128,7 @@ HumanoidRLController::HumanoidRLController(ros::NodeHandle &nh, const ControlCon
     bag_seq_
         = std::make_unique<HumanoidRLBag>(control_config_.bag_config.bag_name, control_config_.bag_config.bag_topic,
                                           control_config_.bag_config.bag_rate); // bag sequence object
-    current_arm_joint_pos_.resize(control_config_.robot_config.arm_joints_num);
+    current_upper_body_joint_pos_.resize(control_config_.robot_config.upper_body_joints_num);
     dest_reach_duration_cycle_ = control_config_.bag_config.dest_reach_duration_cycles;
 }
 
@@ -880,7 +880,7 @@ void HumanoidRLController::HandleWalkMode()
                    || (joint_name == "waist_roll_joint")) // jump skip neck and waist joints
                     continue;
                 double pos_des
-                    = current_arm_joint_pos_(i) * (1 - dest_joint_mode_percentage_)
+                    = current_upper_body_joint_pos_(i) * (1 - dest_joint_mode_percentage_)
                       + dest_joint_mode_percentage_ * control_config_.bag_config.upper_body_dest_pos[joint_name];
                 pos_des_cmd_[i] = pos_des;
                 LOGFMTA("Add dest joint data to upper body joint: %s, index: %d, pos_des: %f", joint_name.c_str(), i,
@@ -899,7 +899,7 @@ void HumanoidRLController::HandleWalkMode()
                    || (joint_name == "waist_roll_joint")) // jump skip neck and waist joints
                     continue;
                 double pos_des
-                    = current_arm_joint_pos_(i) * dest_joint_mode_percentage_
+                    = current_upper_body_joint_pos_(i) * dest_joint_mode_percentage_
                       + (1 - dest_joint_mode_percentage_) * control_config_.joint_conf["init_state"][joint_name];
                 pos_des_cmd_[i] = pos_des;
                 LOGFMTA("Add default joint data to upper body joint: %s, index: %d, pos_des: %f", joint_name.c_str(), i,

@@ -447,13 +447,13 @@ void HumanoidRLInference::destJointTriggerCallback(const std_msgs::Bool::ConstPt
             {
                 // store current arm joint pos
                 std::unique_lock<std::shared_mutex> lock(rl_controller_->state_mutex_);
-                for(size_t i = 0; i < static_cast<size_t>(rl_controller_->control_config_.robot_config.arm_joints_num);
-                    ++i)
+                for(size_t i = 0;
+                    i < static_cast<size_t>(rl_controller_->control_config_.robot_config.upper_body_joints_num); ++i)
                 {
-                    std::string arm_joint_name = rl_controller_->control_config_.ordered_arm_joint_names[i];
-                    rl_controller_->current_arm_joint_pos_(i)
-                        = rl_controller_
-                              ->measured_q_[rl_controller_->joint_name_to_index_[arm_joint_name] + MEANLESS_SIZE];
+                    std::string upper_body_joint_name = rl_controller_->control_config_.ordered_joint_names[i];
+                    rl_controller_->current_upper_body_joint_pos_(i)
+                        = rl_controller_->measured_q_[rl_controller_->joint_name_to_index_[upper_body_joint_name]
+                                                      + MEANLESS_SIZE];
                 }
                 // start moving to dest joint
                 rl_controller_->reach_dest_joint_ = true;
@@ -463,13 +463,13 @@ void HumanoidRLInference::destJointTriggerCallback(const std_msgs::Bool::ConstPt
             {
                 // store current arm joint pos
                 std::unique_lock<std::shared_mutex> lock(rl_controller_->state_mutex_);
-                for(size_t i = 0; i < static_cast<size_t>(rl_controller_->control_config_.robot_config.arm_joints_num);
-                    ++i)
+                for(size_t i = 0;
+                    i < static_cast<size_t>(rl_controller_->control_config_.robot_config.upper_body_joints_num); ++i)
                 {
-                    std::string arm_joint_name = rl_controller_->control_config_.ordered_arm_joint_names[i];
-                    rl_controller_->current_arm_joint_pos_(i)
-                        = rl_controller_
-                              ->measured_q_[rl_controller_->joint_name_to_index_[arm_joint_name] + MEANLESS_SIZE];
+                    std::string upper_body_joint_name = rl_controller_->control_config_.ordered_joint_names[i];
+                    rl_controller_->current_upper_body_joint_pos_(i)
+                        = rl_controller_->measured_q_[rl_controller_->joint_name_to_index_[upper_body_joint_name]
+                                                      + MEANLESS_SIZE];
                 }
                 // start moving to default joint
                 rl_controller_->reach_dest_joint_ = false;
