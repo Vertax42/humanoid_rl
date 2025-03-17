@@ -247,13 +247,13 @@ control_conf:
       left_wrist_yaw_joint: 50
       neck_yaw_joint: 50
       neck_pitch_joint: 50
-      right_shoulder_pitch_joint: 80
+      right_shoulder_pitch_joint: 80 # 9 0.5
       right_shoulder_roll_joint: 80
       right_arm_yaw_joint: 50
-      right_elbow_pitch_joint: 50
+      right_elbow_pitch_joint: 50 # 12 -0.5
       right_elbow_yaw_joint: 50
-      right_wrist_roll_joint: 50
-      right_wrist_yaw_joint: 50
+      right_wrist_roll_joint: 50 # 14 -0.6
+      right_wrist_yaw_joint: 50 # 15 0
       waist_yaw_joint: 100
       waist_roll_joint: 100
       left_leg_roll_joint: 100

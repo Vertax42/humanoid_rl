@@ -446,7 +446,7 @@ void HumanoidRLInference::destJointTriggerCallback(const std_msgs::Bool::ConstPt
             if(rl_controller_->dest_joint_mode_percentage_ == 0.0 && !rl_controller_->reach_dest_joint_)
             {
                 // store current arm joint pos
-                std::unique_lock<std::shared_mutex> lock(rl_controller_->state_mutex_);
+                // std::unique_lock<std::shared_mutex> lock(rl_controller_->state_mutex_);
                 for(size_t i = 0;
                     i < static_cast<size_t>(rl_controller_->control_config_.robot_config.upper_body_joints_num); ++i)
                 {
@@ -454,6 +454,8 @@ void HumanoidRLInference::destJointTriggerCallback(const std_msgs::Bool::ConstPt
                     rl_controller_->current_upper_body_joint_pos_(i)
                         = rl_controller_->measured_q_[rl_controller_->joint_name_to_index_[upper_body_joint_name]
                                                       + MEANLESS_SIZE];
+                    LOGFMTD("upper_body_joint_name: %s, index: %ld, pos: %f", upper_body_joint_name.c_str(), i,
+                            rl_controller_->current_upper_body_joint_pos_(i));
                 }
                 // start moving to dest joint
                 rl_controller_->reach_dest_joint_ = true;
@@ -462,19 +464,32 @@ void HumanoidRLInference::destJointTriggerCallback(const std_msgs::Bool::ConstPt
             } else if(rl_controller_->dest_joint_mode_percentage_ >= 1.0 && rl_controller_->reach_dest_joint_)
             {
                 // store current arm joint pos
-                std::unique_lock<std::shared_mutex> lock(rl_controller_->state_mutex_);
+                // std::unique_lock<std::shared_mutex> lock(rl_controller_->state_mutex_);
+                LOGW("Disabling destination joint mode: Moving from destination to default joint!");
                 for(size_t i = 0;
                     i < static_cast<size_t>(rl_controller_->control_config_.robot_config.upper_body_joints_num); ++i)
                 {
                     std::string upper_body_joint_name = rl_controller_->control_config_.ordered_joint_names[i];
-                    rl_controller_->current_upper_body_joint_pos_(i)
-                        = rl_controller_->measured_q_[rl_controller_->joint_name_to_index_[upper_body_joint_name]
-                                                      + MEANLESS_SIZE];
+                    if(i == 9)
+                    {
+                        rl_controller_->current_upper_body_joint_pos_(i) = 0.5;
+                    } else if(i == 12)
+                    {
+                        rl_controller_->current_upper_body_joint_pos_(i) = -0.5;
+                    } else if(i == 14)
+                    {
+                        rl_controller_->current_upper_body_joint_pos_(i) = -0.6;
+                    } else
+                    {
+                        rl_controller_->current_upper_body_joint_pos_(i) = 0;
+                    }
+
+                    LOGFMTD("upper_body_joint_name: %s, index: %ld, pos: %f", upper_body_joint_name.c_str(), i,
+                            rl_controller_->current_upper_body_joint_pos_(i));
                 }
                 // start moving to default joint
                 rl_controller_->reach_dest_joint_ = false;
                 rl_controller_->dest_joint_mode_percentage_ = 1.0;
-                LOGW("Disabling destination joint mode: Moving from destination to default joint!");
             }
             LOGFMTD("Destination reach duration: %f, last time: %fs", rl_controller_->dest_reach_duration_cycle_,
                     rl_controller_->dest_reach_duration_cycle_ * 0.01);
