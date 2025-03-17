@@ -452,7 +452,8 @@ void HumanoidRLInference::destJointTriggerCallback(const std_msgs::Bool::ConstPt
                 {
                     std::string arm_joint_name = rl_controller_->control_config_.ordered_arm_joint_names[i];
                     rl_controller_->current_arm_joint_pos_(i)
-                        = rl_controller_->control_config_.bag_config.upper_body_dest_pos[arm_joint_name];
+                        = rl_controller_
+                              ->measured_q_[rl_controller_->joint_name_to_index_[arm_joint_name] + MEANLESS_SIZE];
                 }
                 // start moving to dest joint
                 rl_controller_->reach_dest_joint_ = true;
@@ -467,7 +468,8 @@ void HumanoidRLInference::destJointTriggerCallback(const std_msgs::Bool::ConstPt
                 {
                     std::string arm_joint_name = rl_controller_->control_config_.ordered_arm_joint_names[i];
                     rl_controller_->current_arm_joint_pos_(i)
-                        = rl_controller_->control_config_.bag_config.upper_body_dest_pos[arm_joint_name];
+                        = rl_controller_
+                              ->measured_q_[rl_controller_->joint_name_to_index_[arm_joint_name] + MEANLESS_SIZE];
                 }
                 // start moving to default joint
                 rl_controller_->reach_dest_joint_ = false;

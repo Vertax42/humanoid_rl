@@ -218,6 +218,7 @@ private:
     std::vector<std::vector<int64_t> > input_shapes_;
     std::vector<std::vector<int64_t> > output_shapes_;
 
+public:
     // from rostopic
     ControlState current_state_;
     std::unordered_map<std::string, int32_t> obs_name_to_index_;    // 47
@@ -227,6 +228,7 @@ private:
     // computed in algorithm
     std::vector<float> actions_;      // 12
     std::vector<float> observations_; // 47 * history_length
+
 public:
     std::atomic<bool> data_ready_{ false };
     std::atomic<uint64_t> data_stamp_{ 0 };
