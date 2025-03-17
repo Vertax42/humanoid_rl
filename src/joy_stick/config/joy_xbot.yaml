@@ -9,6 +9,8 @@ float_pubs:
     buttons: [0] # A
   - topic_name: walk_mode
     buttons: [2] # X
+  - topic_name: /play_trigger
+    buttons: [6] # select button
 reset_pubs:
   - buttons: [3] # Y for reset vel_cmd
 twist_pubs:

@@ -1,4 +1,3 @@
-
 /**
  * Copyright (c) [2025] XinChengYang <vertax@foxmail.com> <yaphetys@gmail.com>
  *
@@ -59,169 +58,10 @@ void HumanoidRLInference::jointsCallback(const std_msgs::Float64MultiArray::Cons
     rl_controller_->SetBodyStateData(msg);
 }
 
-void HumanoidRLInference::bagJointsCallback(const sensor_msgs::JointState::ConstPtr &msg)
-{
-    rl_controller_->SetJointStateDataBag(msg);
-}
-
-std::string HumanoidRLInference::stateToString(ControlState state)
-{
-    switch(state)
-    {
-    case ControlState::DAMPING:
-        return "DAMPING";
-    case ControlState::ZERO:
-        return "ZERO";
-    case ControlState::STAND:
-        return "STAND";
-    case ControlState::WALK:
-        return "WALK";
-    default:
-        return "UNKNOWN";
-    }
-}
-
-void HumanoidRLInference::stateStartCallback(const std_msgs::Bool::ConstPtr &msg)
-{
-    if(!Throttler(std::chrono::high_resolution_clock::now(), last_set_start_time_, 1000ms))
-    {
-        LOGE("State start change throttled, ignoring request!");
-        return;
-    }
-    if(rl_controller_->GetMode() == ControlState::ZERO)
-    {
-        rl_controller_->SetMode(ControlState::DAMPING);
-        LOGW("[ZERO] -> [DAMPING]");
-    } else if(rl_controller_->GetMode() == ControlState::DAMPING)
-    {
-        LOGW("Is already in DAMPING state!");
-        LOGW("[DAMPING] -> [DAMPING]");
-    } else
-    {
-        std::string current_state = stateToString(rl_controller_->GetMode());
-        LOGFMTW("Iilegal state transition: [%s] -> [DAMPING]", current_state.c_str());
-        LOGW("Keep the current state!");
-        LOGFMTW("[%s] -> [%s]", current_state.c_str(), current_state.c_str());
-    }
-}
-
-void HumanoidRLInference::stateZeroCallback(const std_msgs::Bool::ConstPtr &msg)
-{
-    if(!Throttler(std::chrono::high_resolution_clock::now(), last_set_zero_time_, 1000ms))
-    {
-        LOGE("State zero change throttled, ignoring request!");
-        return;
-    }
-    if(rl_controller_->GetMode() == ControlState::STAND)
-    {
-        rl_controller_->SetMode(ControlState::ZERO);
-        LOGW("[STAND] -> [ZERO]");
-    } else if(rl_controller_->GetMode() == ControlState::DAMPING)
-    {
-        rl_controller_->SetMode(ControlState::ZERO);
-        LOGW("[DAMPING] -> [ZERO]");
-    } else if(rl_controller_->GetMode() == ControlState::ZERO)
-    {
-        LOGW("Is already in ZERO state!");
-        LOGW("[ZERO] -> [ZERO]");
-    } else
-    {
-        std::string current_state = stateToString(rl_controller_->GetMode());
-        LOGFMTW("Iilegal state transition: [%s] -> [ZERO]", current_state.c_str());
-        LOGW("Keep the current state!");
-        LOGFMTW("[%s] -> [%s]", current_state.c_str(), current_state.c_str());
-    }
-}
-
-void HumanoidRLInference::stateStandCallback(const std_msgs::Bool::ConstPtr &msg)
-{
-    if(!Throttler(std::chrono::high_resolution_clock::now(), last_set_stand_time_, 1000ms))
-    {
-        // LOGE("State stand change throttled, ignoring request!");
-        return;
-    }
-    if(rl_controller_->GetMode() == ControlState::ZERO)
-    {
-        rl_controller_->SetMode(ControlState::STAND);
-        LOGW("[ZERO] -> [STAND]");
-    } else if(rl_controller_->GetMode() == ControlState::WALK)
-    {
-        rl_controller_->SetMode(ControlState::STAND);
-        LOGW("[WALK] -> [STAND]");
-    } else if(rl_controller_->GetMode() == ControlState::STAND)
-    {
-        LOGW("Is already in STAND state!");
-        LOGW("[STAND] -> [STAND]");
-    } else
-    {
-        std::string current_state = stateToString(rl_controller_->GetMode());
-        LOGFMTW("Iilegal state transition: [%s] -> [STAND]", current_state.c_str());
-        LOGW("Keep the current state!");
-        LOGFMTW("[%s] -> [%s]", current_state.c_str(), current_state.c_str());
-    }
-}
-
-void HumanoidRLInference::stateWalkCallback(const std_msgs::Bool::ConstPtr &msg)
-{
-    if(!Throttler(std::chrono::high_resolution_clock::now(), last_set_walk_time_, 1000ms))
-    {
-        // LOGE("State walk change throttled, ignoring request!");
-        return;
-    }
-    if(rl_controller_->GetMode() == ControlState::STAND)
-    {
-        rl_controller_->SetMode(ControlState::WALK);
-        LOGW("[STAND] -> [WALK]");
-    } else if(rl_controller_->GetMode() == ControlState::WALK)
-    {
-        LOGW("Is already in WALK state!");
-        LOGW("[WALK] -> [WALK]");
-    } else
-    {
-        std::string current_state = stateToString(rl_controller_->GetMode());
-        LOGFMTW("Iilegal state transition: [%s] -> [WALK]", current_state.c_str());
-        LOGW("Keep the current state!");
-        LOGFMTW("[%s] -> [%s]", current_state.c_str(), current_state.c_str());
-    }
-}
-
-bool HumanoidRLInference::InitSubscribers(YAML::Node &cfg_node)
-{
-    try
-    {
-        // joint state subscriber
-        joint_state_sub_
-            = nh_.subscribe(cfg_node["sub_controllers_policy_output_name"].as<std::string>(), 1,
-                            &HumanoidRLInference::jointsCallback, this, ros::TransportHints().tcpNoDelay());
-
-        // joint teleported state subscriber
-        joint_telep_state_sub_
-            = nh_.subscribe(cfg_node["sub_controllers_joints_from_bag_name"].as<std::string>(), 1,
-                            &HumanoidRLInference::bagJointsCallback, this, ros::TransportHints().tcpNoDelay());
-
-        state_start_sub_ = nh_.subscribe(cfg_node["sub_state_machine_start_name"].as<std::string>(), 1,
-                                         &HumanoidRLInference::stateStartCallback, this);
-
-        // zero state machine subscriber
-        state_zero_sub_ = nh_.subscribe(cfg_node["sub_state_machine_zero_name"].as<std::string>(), 1,
-                                        &HumanoidRLInference::stateZeroCallback, this);
-
-        // stand state machine subscriber
-        state_stand_sub_ = nh_.subscribe(cfg_node["sub_state_machine_stand_name"].as<std::string>(), 1,
-                                         &HumanoidRLInference::stateStandCallback, this);
-
-        // walk state machine subscriber
-        state_walk_sub_ = nh_.subscribe(cfg_node["sub_state_machine_walk_name"].as<std::string>(), 1,
-                                        &HumanoidRLInference::stateWalkCallback, this);
-
-        LOGD("Successfully initialized all subscribers!");
-        return true;
-    } catch(const std::exception &e)
-    {
-        LOGFMTE("Failed to initialize subscribers, %s", e.what());
-        return false;
-    }
-}
+// void HumanoidRLInference::bagJointsCallback(const sensor_msgs::JointState::ConstPtr &msg)
+// {
+//     rl_controller_->SetJointStateDataBag(msg);
+// }
 
 bool HumanoidRLInference::Init()
 {
@@ -384,6 +224,7 @@ bool HumanoidRLInference::Init()
         last_set_zero_time_ = high_resolution_clock::now();
         last_set_stand_time_ = high_resolution_clock::now();
         last_set_walk_time_ = high_resolution_clock::now();
+        last_set_upper_body_bag_time_ = high_resolution_clock::now();
 
         // register subscribers
         if(!InitSubscribers(cfg_node))
@@ -402,6 +243,198 @@ bool HumanoidRLInference::Init()
     }
     LOGI("HumanoidRLInference init successed!");
     return true;
+}
+
+std::string HumanoidRLInference::stateToString(ControlState state)
+{
+    switch(state)
+    {
+    case ControlState::DAMPING:
+        return "DAMPING";
+    case ControlState::ZERO:
+        return "ZERO";
+    case ControlState::STAND:
+        return "STAND";
+    case ControlState::WALK:
+        return "WALK";
+    default:
+        return "UNKNOWN";
+    }
+}
+
+void HumanoidRLInference::stateStartCallback(const std_msgs::Bool::ConstPtr &msg)
+{
+    if(!Throttler(std::chrono::high_resolution_clock::now(), last_set_start_time_, 1000ms))
+    {
+        LOGE("State start change throttled, ignoring request!");
+        return;
+    }
+    if(rl_controller_->GetMode() == ControlState::ZERO)
+    {
+        rl_controller_->SetMode(ControlState::DAMPING);
+        LOGW("[ZERO] -> [DAMPING]");
+    } else if(rl_controller_->GetMode() == ControlState::DAMPING)
+    {
+        LOGW("Is already in DAMPING state!");
+        LOGW("[DAMPING] -> [DAMPING]");
+    } else
+    {
+        std::string current_state = stateToString(rl_controller_->GetMode());
+        LOGFMTW("Iilegal state transition: [%s] -> [DAMPING]", current_state.c_str());
+        LOGW("Keep the current state!");
+        LOGFMTW("[%s] -> [%s]", current_state.c_str(), current_state.c_str());
+    }
+}
+
+void HumanoidRLInference::stateZeroCallback(const std_msgs::Bool::ConstPtr &msg)
+{
+    if(!Throttler(std::chrono::high_resolution_clock::now(), last_set_zero_time_, 1000ms))
+    {
+        LOGE("State zero change throttled, ignoring request!");
+        return;
+    }
+    if(rl_controller_->GetMode() == ControlState::STAND)
+    {
+        rl_controller_->SetMode(ControlState::ZERO);
+        LOGW("[STAND] -> [ZERO]");
+    } else if(rl_controller_->GetMode() == ControlState::DAMPING)
+    {
+        rl_controller_->SetMode(ControlState::ZERO);
+        LOGW("[DAMPING] -> [ZERO]");
+    } else if(rl_controller_->GetMode() == ControlState::ZERO)
+    {
+        LOGW("Is already in ZERO state!");
+        LOGW("[ZERO] -> [ZERO]");
+    } else
+    {
+        std::string current_state = stateToString(rl_controller_->GetMode());
+        LOGFMTW("Iilegal state transition: [%s] -> [ZERO]", current_state.c_str());
+        LOGW("Keep the current state!");
+        LOGFMTW("[%s] -> [%s]", current_state.c_str(), current_state.c_str());
+    }
+}
+
+void HumanoidRLInference::stateStandCallback(const std_msgs::Bool::ConstPtr &msg)
+{
+    if(!Throttler(std::chrono::high_resolution_clock::now(), last_set_stand_time_, 1000ms))
+    {
+        // LOGE("State stand change throttled, ignoring request!");
+        return;
+    }
+    if(rl_controller_->GetMode() == ControlState::ZERO)
+    {
+        rl_controller_->SetMode(ControlState::STAND);
+        LOGW("[ZERO] -> [STAND]");
+    } else if(rl_controller_->GetMode() == ControlState::WALK)
+    {
+        rl_controller_->SetMode(ControlState::STAND);
+        LOGW("[WALK] -> [STAND]");
+    } else if(rl_controller_->GetMode() == ControlState::STAND)
+    {
+        LOGW("Is already in STAND state!");
+        LOGW("[STAND] -> [STAND]");
+    } else
+    {
+        std::string current_state = stateToString(rl_controller_->GetMode());
+        LOGFMTW("Iilegal state transition: [%s] -> [STAND]", current_state.c_str());
+        LOGW("Keep the current state!");
+        LOGFMTW("[%s] -> [%s]", current_state.c_str(), current_state.c_str());
+    }
+}
+
+void HumanoidRLInference::stateWalkCallback(const std_msgs::Bool::ConstPtr &msg)
+{
+    if(!Throttler(std::chrono::high_resolution_clock::now(), last_set_walk_time_, 1000ms))
+    {
+        // LOGE("State walk change throttled, ignoring request!");
+        return;
+    }
+    if(rl_controller_->GetMode() == ControlState::STAND)
+    {
+        rl_controller_->SetMode(ControlState::WALK);
+        LOGW("[STAND] -> [WALK]");
+    } else if(rl_controller_->GetMode() == ControlState::WALK)
+    {
+        LOGW("Is already in WALK state!");
+        LOGW("[WALK] -> [WALK]");
+    } else
+    {
+        std::string current_state = stateToString(rl_controller_->GetMode());
+        LOGFMTW("Iilegal state transition: [%s] -> [WALK]", current_state.c_str());
+        LOGW("Keep the current state!");
+        LOGFMTW("[%s] -> [%s]", current_state.c_str(), current_state.c_str());
+    }
+}
+
+void HumanoidRLInference::upperBodyBagCallback(const std_msgs::Bool::ConstPtr &msg)
+{
+    if(!Throttler(std::chrono::high_resolution_clock::now(), last_set_upper_body_bag_time_, 1000ms))
+    {
+        // LOGE("State walk change throttled, ignoring request!");
+        return;
+    }
+    if(rl_controller_->GetMode() == ControlState::WALK)
+    {
+        rl_controller_->upper_body_bag_mode_percentage_ = 0.0;
+        rl_controller_->use_bag_for_upper_body_ = true;
+
+        LOGFMTW("[WALK] -> [PLAY UPPER BODY BAG], use_bag_for_upper_body_: %d",
+                rl_controller_->use_bag_for_upper_body_);
+        // double bag_duration = rl_controller_->bag_seq_->GetDuration();
+        // LOGFMTD("Bag duration: %f", bag_duration);
+        double bag_rate = rl_controller_->bag_seq_->GetPlaybackRate();
+        LOGFMTD("Bag rate: %f", bag_rate);
+        size_t num_frames = rl_controller_->bag_seq_->GetFrameNum();
+        LOGFMTD("Bag frame number: %zu", num_frames);
+    } else
+    {
+        std::string current_state = stateToString(rl_controller_->GetMode());
+        LOGFMTW("Iilegal state transition: [%s] -> [PLAY UPPER BODY BAG]", current_state.c_str());
+        LOGW("Keep the current state!");
+        LOGFMTW("[%s] -> [%s]", current_state.c_str(), current_state.c_str());
+    }
+}
+
+bool HumanoidRLInference::InitSubscribers(YAML::Node &cfg_node)
+{
+    try
+    {
+        // joint state subscriber
+        joint_state_sub_
+            = nh_.subscribe(cfg_node["sub_controllers_policy_output_name"].as<std::string>(), 1,
+                            &HumanoidRLInference::jointsCallback, this, ros::TransportHints().tcpNoDelay());
+
+        // joint teleported state subscriber
+        // joint_telep_state_sub_
+        //     = nh_.subscribe(cfg_node["sub_controllers_joints_from_bag_name"].as<std::string>(), 1,
+        //                     &HumanoidRLInference::bagJointsCallback, this, ros::TransportHints().tcpNoDelay());
+
+        state_start_sub_ = nh_.subscribe(cfg_node["sub_state_machine_start_name"].as<std::string>(), 1,
+                                         &HumanoidRLInference::stateStartCallback, this);
+
+        // zero state machine subscriber
+        state_zero_sub_ = nh_.subscribe(cfg_node["sub_state_machine_zero_name"].as<std::string>(), 1,
+                                        &HumanoidRLInference::stateZeroCallback, this);
+
+        // stand state machine subscriber
+        state_stand_sub_ = nh_.subscribe(cfg_node["sub_state_machine_stand_name"].as<std::string>(), 1,
+                                         &HumanoidRLInference::stateStandCallback, this);
+
+        // walk state machine subscriber
+        state_walk_sub_ = nh_.subscribe(cfg_node["sub_state_machine_walk_name"].as<std::string>(), 1,
+                                        &HumanoidRLInference::stateWalkCallback, this);
+
+        // upper body bag trigger subscriber
+        upper_body_bag_trigger_sub_ = nh_.subscribe(cfg_node["sub_trigger_upper_body_bag_name"].as<std::string>(), 1,
+                                                    &HumanoidRLInference::upperBodyBagCallback, this);
+
+        LOGD("Successfully initialized all subscribers!");
+        return true;
+    } catch(const std::exception &e)
+    {
+        LOGFMTE("Failed to initialize subscribers, %s", e.what());
+        return false;
+    }
 }
 
 bool HumanoidRLInference::PrintControlConfig(const ControlConfig &config)

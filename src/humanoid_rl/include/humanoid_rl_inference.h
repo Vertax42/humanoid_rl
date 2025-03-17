@@ -57,7 +57,7 @@ public:
 public:
     ros::NodeHandle &nh_;
     ros::Subscriber joint_state_sub_;
-    ros::Subscriber joint_telep_state_sub_; // used for rosbag
+    // ros::Subscriber joint_telep_state_sub_; // used for rosbag
 
     ros::Publisher policy_pub_;
     // state machine
@@ -66,15 +66,18 @@ public:
     ros::Subscriber state_stand_sub_;
     ros::Subscriber state_walk_sub_;
 
+    ros::Subscriber upper_body_bag_trigger_sub_;
+
 public:
     // callback funcs
     void jointsCallback(const std_msgs::Float64MultiArray::ConstPtr &msg); // used for real robot state callback
-    void bagJointsCallback(const sensor_msgs::JointState::ConstPtr &msg);  // used for rosbag callback
-    void stateStartCallback(const std_msgs::Bool::ConstPtr &msg);          // damping
-    void stateZeroCallback(const std_msgs::Bool::ConstPtr &msg);           // zero
-    void stateStandCallback(const std_msgs::Bool::ConstPtr &msg);          // stand
-    void stateWalkCallback(const std_msgs::Bool::ConstPtr &msg);           // walk
+    // void bagJointsCallback(const sensor_msgs::JointState::ConstPtr &msg);  // used for rosbag callback
+    void stateStartCallback(const std_msgs::Bool::ConstPtr &msg); // damping
+    void stateZeroCallback(const std_msgs::Bool::ConstPtr &msg);  // zero
+    void stateStandCallback(const std_msgs::Bool::ConstPtr &msg); // stand
+    void stateWalkCallback(const std_msgs::Bool::ConstPtr &msg);  // walk
 
+    void upperBodyBagCallback(const std_msgs::Bool::ConstPtr &msg); // play upper body bag
     std::string stateToString(ControlState state);
     //   [zero]←--→[stand]
     //    ↑     /    ↑
@@ -85,6 +88,7 @@ public:
     time_point<high_resolution_clock> last_set_zero_time_;
     time_point<high_resolution_clock> last_set_stand_time_;
     time_point<high_resolution_clock> last_set_walk_time_;
+    time_point<high_resolution_clock> last_set_upper_body_bag_time_;
 
 
 public:

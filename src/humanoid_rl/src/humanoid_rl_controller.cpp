@@ -518,10 +518,10 @@ void HumanoidRLController::SetBodyStateData(const std_msgs::Float64MultiArray::C
     data_ready_.store(true);
 }
 
-void HumanoidRLController::SetJointStateDataBag(const sensor_msgs::JointState::ConstPtr &msg)
-{
-    std::unique_lock<std::shared_mutex> lock(data_mutex_);
-}
+// void HumanoidRLController::SetJointStateDataBag(const sensor_msgs::JointState::ConstPtr &msg)
+// {
+//     std::unique_lock<std::shared_mutex> lock(data_mutex_);
+// }
 
 void HumanoidRLController::GetJointCmdData(std_msgs::Float64MultiArray &cmd_msg)
 {
@@ -800,7 +800,6 @@ void HumanoidRLController::HandleWalkMode()
     cycle_count_++;
 
     // walk mode
-
     for(int j = 0; j < control_config_.robot_config.total_joints_num; j++)
     {
         // int index = joint_name_to_index_[control_config_.ordered_joint_names[j]];
@@ -812,6 +811,51 @@ void HumanoidRLController::HandleWalkMode()
         torque_cmd_[j] = 0.0;
     }
 
+    // enable upper body bag control
+    if(use_bag_for_upper_body_ && bag_seq_ && !bag_seq_->IsEmpty())
+    {
+        // check if bag playback is finished
+        if(current_bag_frame_ >= static_cast<int64_t>(bag_seq_->GetFrameNum()))
+        {
+            // bag playback finished, switch back to default control
+            LOGFMTI("bag playback finished, switch back to default control, frame number: %zu",
+                    bag_seq_->GetFrameNum());
+            use_bag_for_upper_body_ = false;
+            current_bag_frame_ = 0;
+        } else
+        {
+            // every 100 frames print one progress
+            if(current_bag_frame_ % 100 == 0)
+            {
+                LOGFMTD("bag playback progress: %zu/%zu (%.1f%%)", current_bag_frame_, bag_seq_->GetFrameNum(),
+                        100.0 * current_bag_frame_ / bag_seq_->GetFrameNum());
+            }
+            // get current frame joint states
+            const auto &frame = bag_seq_->GetFrameJointStates(current_bag_frame_);
+            // apply to upper body joints
+            for(int i = 0; i < control_config_.robot_config.upper_body_joints_num; i++)
+            {
+                std::string joint_name = control_config_.ordered_joint_names[i];
+                if((joint_name == "neck_yaw_joint") || (joint_name == "neck_pitch_joint")
+                   || (joint_name == "waist_yaw_joint")
+                   || (joint_name == "waist_roll_joint")) // jump skip neck and waist joints
+                    continue;
+                auto it = frame.find(joint_name);
+
+                if(it != frame.end())
+                {
+                    // found the corresponding joint data, use the position from bag
+                    pos_des_cmd_[i] = it->second;
+                }
+                LOGFMTA("Add bag data to upper body joint: %s, index: %d, pos_des: %f", joint_name.c_str(), i,
+                        pos_des_cmd_[i]);
+            }
+
+            // every control loop increase frame
+            current_bag_frame_++;
+        }
+    }
+
     if(control_config_.inference_config.use_lpf)
     {
         // LOGD("Use LPF!");
@@ -819,10 +863,10 @@ void HumanoidRLController::HandleWalkMode()
         {
             if(i == 4 || i == 5 || i == 10 || i == 11)
             {
-                double tau_des = kp_cmd_[control_config_.robot_config.upper_body_joints_num + i]
-                                 * (actions_[i] * control_config_.inference_config.action_scale - propri_.joint_pos[i]
-                                    + kd_cmd_[control_config_.robot_config.upper_body_joints_num + i]
-                                          * (0 - propri_.joint_vel[i]));
+                double tau_des
+                    = kp_cmd_[control_config_.robot_config.upper_body_joints_num + i]
+                          * (actions_[i] * control_config_.inference_config.action_scale - propri_.joint_pos[i])
+                      + kd_cmd_[control_config_.robot_config.upper_body_joints_num + i] * (0 - propri_.joint_vel[i]);
                 lpf_filters_[i].input(tau_des);
                 double tau_des_lp = lpf_filters_[i].output();
 

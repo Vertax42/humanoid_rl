@@ -137,8 +137,8 @@ public:
 
     void SetMode(const ControlState state);
     void SetBodyStateData(const std_msgs::Float64MultiArray::ConstPtr &msg); // for rl observation
-    void SetJointStateDataBag(const sensor_msgs::JointState::ConstPtr &msg); // for whole body teleoperation from bag
-    void TwistCmdCallback(const geometry_msgs::Twist::ConstPtr &msg);        // for command input
+    // void SetJointStateDataBag(const sensor_msgs::JointState::ConstPtr &msg); // for whole body teleoperation from bag
+    void TwistCmdCallback(const geometry_msgs::Twist::ConstPtr &msg); // for command input
 
     ControlState GetMode();
     std::string GetCurrentMode();
@@ -239,6 +239,7 @@ private:
     Eigen::Matrix<float, Eigen::Dynamic, 1> propri_history_buffer_;
     bool is_first_observation_ = true;
     int64_t cycle_count_ = 0;
+    int64_t current_bag_frame_ = 0;
     std::vector<digital_lp_filter<double> > lpf_filters_;
 
     // wraped control msg
@@ -259,6 +260,10 @@ public:
 
     // load bag data
     std::unique_ptr<HumanoidRLBag> bag_seq_;
+
+public:
+    double upper_body_bag_mode_percentage_ = 0.0;
+    bool use_bag_for_upper_body_{ false };
 };
 
 

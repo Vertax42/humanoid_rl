@@ -99,18 +99,6 @@ bool JoyStickImpl::Init()
             }
         }
 
-        // if(cfg_node["service_clients"])
-        // {
-        //     for(const auto &client : cfg_node["service_clients"])
-        //     {
-        //         ServiceClient service_client;
-        //         service_client.service_name = client["service_name"].as<std::string>();
-        //         service_client.interface_type = client["interface_type"].as<std::string>();
-        //         service_client.buttons = client["buttons"].as<std::vector<uint8_t> >();
-        //         service_clients_.push_back(service_client);
-        //     }
-        // }
-
         if(float_pubs_.size() != 4)
         {
             LOGFMTE("float_pubs size is not 4, %ld", float_pubs_.size());
