@@ -898,8 +898,9 @@ void HumanoidRLController::HandleWalkMode()
                    || (joint_name == "waist_yaw_joint")
                    || (joint_name == "waist_roll_joint")) // jump skip neck and waist joints
                     continue;
-                double pos_des = current_joint_pos_(i) * (1 - dest_joint_mode_percentage_)
-                                 + dest_joint_mode_percentage_ * control_config_.joint_conf["init_state"][joint_name];
+                double pos_des
+                    = current_joint_pos_(i) * dest_joint_mode_percentage_
+                      + (1 - dest_joint_mode_percentage_) * control_config_.joint_conf["init_state"][joint_name];
                 pos_des_cmd_[i] = pos_des;
                 LOGFMTA("Add default joint data to upper body joint: %s, index: %d, pos_des: %f", joint_name.c_str(), i,
                         pos_des_cmd_[i]);
