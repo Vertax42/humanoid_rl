@@ -158,6 +158,27 @@ bool HumanoidRLInference::Init()
             = bag_path + cfg_node["control_conf"]["bag_conf"]["bag_name"].as<std::string>();
         control_conf.bag_config.bag_topic = cfg_node["control_conf"]["bag_conf"]["bag_topic"].as<std::string>();
         control_conf.bag_config.bag_rate = cfg_node["control_conf"]["bag_conf"]["bag_rate"].as<double>();
+
+        for(size_t i = 0; i < cfg_node["control_conf"]["bag_conf"]["upper_body_dest_pos"].size(); i++)
+        {
+            if(cfg_node["control_conf"]["bag_conf"]["upper_body_dest_pos"].size()
+               != control_conf.ordered_arm_joint_names.size())
+            {
+                LOGFMTE("upper_body_dest_pos size mismatch, expected: %zu, got: %zu",
+                        control_conf.ordered_arm_joint_names.size(),
+                        cfg_node["control_conf"]["bag_conf"]["upper_body_dest_pos"].size());
+                return false;
+            }
+            std::string arm_joint_name = control_conf.ordered_arm_joint_names[i];
+            control_conf.bag_config.upper_body_dest_pos[arm_joint_name]
+                = cfg_node["control_conf"]["bag_conf"]["upper_body_dest_pos"][i].as<double>();
+            LOGFMTD("upper_body_dest_pos[%zu]: %s, %f", i, arm_joint_name.c_str(),
+                    control_conf.bag_config.upper_body_dest_pos[arm_joint_name]);
+        }
+        control_conf.bag_config.dest_reach_duration_cycles
+            = cfg_node["control_conf"]["bag_conf"]["dest_reach_duration"].as<double>()
+              * 100.0; // transfer to cycle numbers
+
         LOGD("Loaded bag_config");
         // ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
         // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ inference_conf ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
@@ -370,11 +391,18 @@ void HumanoidRLInference::upperBodyBagCallback(const std_msgs::Bool::ConstPtr &m
 {
     if(!Throttler(std::chrono::high_resolution_clock::now(), last_set_upper_body_bag_time_, 1000ms))
     {
-        // LOGE("State walk change throttled, ignoring request!");
+        // LOGE("Upper body bag trigger throttled, ignoring request!");
         return;
     }
     if(rl_controller_->GetMode() == ControlState::WALK)
     {
+        // check if dest trigger mode is activated
+        if(rl_controller_->dest_joint_mode_percentage_ > 0.0)
+        {
+            LOGW("Dest trigger mode is activated, ignoring request!");
+            return;
+        }
+
         rl_controller_->upper_body_bag_mode_percentage_ = 0.0;
         rl_controller_->use_bag_for_upper_body_ = true;
 
@@ -390,6 +418,73 @@ void HumanoidRLInference::upperBodyBagCallback(const std_msgs::Bool::ConstPtr &m
     {
         std::string current_state = stateToString(rl_controller_->GetMode());
         LOGFMTW("Iilegal state transition: [%s] -> [PLAY UPPER BODY BAG]", current_state.c_str());
+        LOGW("Keep the current state!");
+        LOGFMTW("[%s] -> [%s]", current_state.c_str(), current_state.c_str());
+    }
+}
+
+void HumanoidRLInference::destJointTriggerCallback(const std_msgs::Bool::ConstPtr &msg)
+{
+    if(!Throttler(std::chrono::high_resolution_clock::now(), last_set_dest_joint_time_, 1000ms))
+    {
+        // LOGE("Dest joint trigger throttled, ignoring request!");
+        return;
+    }
+    if(rl_controller_->GetMode() == ControlState::WALK)
+    {
+        // check if bag play mode is active
+        if(rl_controller_->use_bag_for_upper_body_)
+        {
+            LOGW("Bag play mode is active, illegal to change to trigger dest joint mode!");
+            return;
+        }
+
+        // only allow changes when in walk state and movement is not in progress
+        if(rl_controller_->dest_joint_mode_percentage_ == 0.0 || rl_controller_->dest_joint_mode_percentage_ >= 1.0)
+        {
+            // if at default position or moving from dest to default
+            if(rl_controller_->dest_joint_mode_percentage_ == 0.0 && !rl_controller_->reach_dest_joint_)
+            {
+                // store current arm joint pos
+                std::unique_lock<std::shared_mutex> lock(rl_controller_->state_mutex_);
+                for(size_t i = 0; i < static_cast<size_t>(rl_controller_->control_config_.robot_config.arm_joints_num);
+                    ++i)
+                {
+                    std::string arm_joint_name = rl_controller_->control_config_.ordered_arm_joint_names[i];
+                    rl_controller_->current_arm_joint_pos_(i)
+                        = rl_controller_->control_config_.bag_config.upper_body_dest_pos[arm_joint_name];
+                }
+                // start moving to dest joint
+                rl_controller_->reach_dest_joint_ = true;
+                rl_controller_->dest_joint_mode_percentage_ = 0.0;
+                LOGW("Enabling destination joint mode: Moving from default to destination joint!");
+            } else if(rl_controller_->dest_joint_mode_percentage_ >= 1.0 && rl_controller_->reach_dest_joint_)
+            {
+                // store current arm joint pos
+                std::unique_lock<std::shared_mutex> lock(rl_controller_->state_mutex_);
+                for(size_t i = 0; i < static_cast<size_t>(rl_controller_->control_config_.robot_config.arm_joints_num);
+                    ++i)
+                {
+                    std::string arm_joint_name = rl_controller_->control_config_.ordered_arm_joint_names[i];
+                    rl_controller_->current_arm_joint_pos_(i)
+                        = rl_controller_->control_config_.bag_config.upper_body_dest_pos[arm_joint_name];
+                }
+                // start moving to default joint
+                rl_controller_->reach_dest_joint_ = false;
+                rl_controller_->dest_joint_mode_percentage_ = 1.0;
+                LOGW("Disabling destination joint mode: Moving from destination to default joint!");
+            }
+            LOGFMTD("Destination reach duration: %f, last time: %fs", rl_controller_->dest_reach_duration_cycle_,
+                    rl_controller_->dest_reach_duration_cycle_ * 0.01);
+        } else
+        {
+            LOGW("Destination joint mode is already in progress, ignoring request!");
+            // LOGFMTD("Current percentage: %.2f%%", rl_controller_->dest_joint_mode_percentage_ * 100.0);
+        }
+    } else
+    {
+        std::string current_state = stateToString(rl_controller_->GetMode());
+        LOGFMTW("Iilegal state transition: [%s] -> [REACH DEST JOINT]", current_state.c_str());
         LOGW("Keep the current state!");
         LOGFMTW("[%s] -> [%s]", current_state.c_str(), current_state.c_str());
     }
@@ -427,6 +522,10 @@ bool HumanoidRLInference::InitSubscribers(YAML::Node &cfg_node)
         // upper body bag trigger subscriber
         upper_body_bag_trigger_sub_ = nh_.subscribe(cfg_node["sub_trigger_upper_body_bag_name"].as<std::string>(), 1,
                                                     &HumanoidRLInference::upperBodyBagCallback, this);
+
+        // dest joint trigger subscriber
+        dest_joint_trigger_sub_ = nh_.subscribe(cfg_node["sub_trigger_dest_joint_name"].as<std::string>(), 1,
+                                                &HumanoidRLInference::destJointTriggerCallback, this);
 
         LOGD("Successfully initialized all subscribers!");
         return true;

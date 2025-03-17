@@ -81,7 +81,8 @@ HumanoidRLController::HumanoidRLController(ros::NodeHandle &nh, const ControlCon
     }
 
     current_joint_pos_.resize(control_config_.robot_config.total_joints_num); // curent joint position
-    current_state_ = ControlState::DAMPING;                                   // init to damping mode
+
+    current_state_ = ControlState::DAMPING; // init to damping mode
 
     obs_name_to_index_.clear();
     joint_name_to_index_.clear();
@@ -123,9 +124,12 @@ HumanoidRLController::HumanoidRLController(ros::NodeHandle &nh, const ControlCon
         LOGFMTI("Onnx model warmup completed");
     }
 
+    // for bag play trigger && dest joint trigger
     bag_seq_
         = std::make_unique<HumanoidRLBag>(control_config_.bag_config.bag_name, control_config_.bag_config.bag_topic,
                                           control_config_.bag_config.bag_rate); // bag sequence object
+    current_arm_joint_pos_.resize(control_config_.robot_config.arm_joints_num);
+    dest_reach_duration_cycle_ = control_config_.bag_config.dest_reach_duration_cycles;
 }
 
 HumanoidRLController::~HumanoidRLController() { LOGD("HumanoidRLController object has been destroyed!"); }
@@ -811,6 +815,13 @@ void HumanoidRLController::HandleWalkMode()
         torque_cmd_[j] = 0.0;
     }
 
+    if(use_bag_for_upper_body_ && reach_dest_joint_)
+    {
+        LOGW("Both upper body bag and dest joint modes are active! Prioritizing dest joint mode.");
+        use_bag_for_upper_body_ = false;
+        upper_body_bag_mode_percentage_ = 0.0;
+    }
+
     // enable upper body bag control
     if(use_bag_for_upper_body_ && bag_seq_ && !bag_seq_->IsEmpty())
     {
@@ -824,22 +835,12 @@ void HumanoidRLController::HandleWalkMode()
             current_bag_frame_ = 0;
         } else
         {
-            // every 100 frames print one progress
-            if(current_bag_frame_ % 100 == 0)
-            {
-                LOGFMTD("bag playback progress: %zu/%zu (%.1f%%)", current_bag_frame_, bag_seq_->GetFrameNum(),
-                        100.0 * current_bag_frame_ / bag_seq_->GetFrameNum());
-            }
             // get current frame joint states
             const auto &frame = bag_seq_->GetFrameJointStates(current_bag_frame_);
             // apply to upper body joints
-            for(int i = 0; i < control_config_.robot_config.upper_body_joints_num; i++)
+            for(int i = 0; i < control_config_.robot_config.arm_joints_num; i++)
             {
-                std::string joint_name = control_config_.ordered_joint_names[i];
-                if((joint_name == "neck_yaw_joint") || (joint_name == "neck_pitch_joint")
-                   || (joint_name == "waist_yaw_joint")
-                   || (joint_name == "waist_roll_joint")) // jump skip neck and waist joints
-                    continue;
+                std::string joint_name = control_config_.ordered_arm_joint_names[i];
                 auto it = frame.find(joint_name);
 
                 if(it != frame.end())
@@ -853,8 +854,51 @@ void HumanoidRLController::HandleWalkMode()
 
             // every control loop increase frame
             current_bag_frame_++;
+            LOGFMTA("current_bag_frame_: %ld", current_bag_frame_);
+            // every 100 frames print one progress
+            if(current_bag_frame_ % 100 == 0)
+            {
+                LOGFMTD("bag playback progress: %zu/%zu (%.1f%%)", current_bag_frame_, bag_seq_->GetFrameNum(),
+                        100.0 * current_bag_frame_ / bag_seq_->GetFrameNum());
+            }
         }
+    } // enable destination joint control mode
+    else if(reach_dest_joint_ || (!reach_dest_joint_ && dest_joint_mode_percentage_ > 0.0))
+    {
+        if(reach_dest_joint_ && dest_joint_mode_percentage_ <= 1.0)
+        {
+            // moving from default to destination joint pos
+            for(int i = 0; i < control_config_.robot_config.arm_joints_num; i++)
+            {
+                std::string joint_name = control_config_.ordered_arm_joint_names[i];
+                double pos_des
+                    = current_joint_pos_(i) * (1 - dest_joint_mode_percentage_)
+                      + dest_joint_mode_percentage_ * control_config_.bag_config.upper_body_dest_pos[joint_name];
+                pos_des_cmd_[i] = pos_des;
+                LOGFMTA("Add dest joint data to upper body joint: %s, index: %d, pos_des: %f", joint_name.c_str(), i,
+                        pos_des_cmd_[i]);
+            }
+            dest_joint_mode_percentage_ += 1 / dest_reach_duration_cycle_;
+            dest_joint_mode_percentage_ = std::min(dest_joint_mode_percentage_, 1.0);
+        } else if(!reach_dest_joint_ && dest_joint_mode_percentage_ > 0.0)
+        {
+            // moving from current joint pos to default joint pos
+            for(int i = 0; i < control_config_.robot_config.arm_joints_num; i++)
+            {
+                std::string joint_name = control_config_.ordered_arm_joint_names[i];
+                double pos_des = current_joint_pos_(i) * (1 - dest_joint_mode_percentage_)
+                                 + dest_joint_mode_percentage_ * control_config_.joint_conf["init_state"][joint_name];
+                pos_des_cmd_[i] = pos_des;
+                LOGFMTA("Add default joint data to upper body joint: %s, index: %d, pos_des: %f", joint_name.c_str(), i,
+                        pos_des_cmd_[i]);
+            }
+            dest_joint_mode_percentage_ -= 1 / dest_reach_duration_cycle_;
+            dest_joint_mode_percentage_ = std::max(dest_joint_mode_percentage_, 0.0);
+        }
+        LOGFMTD("dest_joint_mode_percentage_: %f", dest_joint_mode_percentage_);
     }
+
+    // enable reach dest joint
 
     if(control_config_.inference_config.use_lpf)
     {

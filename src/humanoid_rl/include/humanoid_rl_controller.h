@@ -92,6 +92,8 @@ struct ControlConfig {
         std::string bag_name;
         std::string bag_topic;
         double bag_rate;
+        std::map<std::string, double> upper_body_dest_pos; // destination position for upper body joints
+        double dest_reach_duration_cycles;
     };
 
     struct ObsConfig {
@@ -111,7 +113,7 @@ struct ControlConfig {
     // joint_conf["init_state"/"stiffness"/"damping"][joint_name]
     std::vector<std::string> ordered_obs_names;                       // observation names in order
     std::vector<std::string> ordered_action_names;                    // action names in order
-    std::vector<std::string> ordered_arm_joint_names;                 // arm joint names in order
+    std::vector<std::string> ordered_arm_joint_names;                 // arm joint names in order with necks and waists
     std::vector<std::string> ordered_joint_names;                     // joint names in order
     std::map<std::string, std::map<std::string, double> > joint_conf; // joint configuration
     ObsConfig obs_config;                                             // observation configuration
@@ -256,14 +258,19 @@ public:
     // Mode transition control
     double trans_mode_percentage_ = 0.0;
     double trans_mode_duration_cycle_ = 500.0; // 0.01 * 500 = 5s
+    double dest_reach_duration_cycle_ = 0.0;   // default 3s
     vector_t current_joint_pos_;               // 30 dof, only record when SetMode is called
 
+public:
     // load bag data
     std::unique_ptr<HumanoidRLBag> bag_seq_;
-
-public:
     double upper_body_bag_mode_percentage_ = 0.0;
     bool use_bag_for_upper_body_{ false };
+
+    // reach dest joint
+    vector_t current_arm_joint_pos_; // 14 dof
+    double dest_joint_mode_percentage_ = 0.0;
+    bool reach_dest_joint_{ false };
 };
 
 

@@ -66,7 +66,8 @@ public:
     ros::Subscriber state_stand_sub_;
     ros::Subscriber state_walk_sub_;
 
-    ros::Subscriber upper_body_bag_trigger_sub_;
+    ros::Subscriber upper_body_bag_trigger_sub_; // play upper body bag trigger
+    ros::Subscriber dest_joint_trigger_sub_;     // dest joint trigger
 
 public:
     // callback funcs
@@ -77,7 +78,9 @@ public:
     void stateStandCallback(const std_msgs::Bool::ConstPtr &msg); // stand
     void stateWalkCallback(const std_msgs::Bool::ConstPtr &msg);  // walk
 
-    void upperBodyBagCallback(const std_msgs::Bool::ConstPtr &msg); // play upper body bag
+    void upperBodyBagCallback(const std_msgs::Bool::ConstPtr &msg);     // play upper body bag
+    void destJointTriggerCallback(const std_msgs::Bool::ConstPtr &msg); // dest joint trigger
+
     std::string stateToString(ControlState state);
     //   [zero]←--→[stand]
     //    ↑     /    ↑
@@ -89,6 +92,7 @@ public:
     time_point<high_resolution_clock> last_set_stand_time_;
     time_point<high_resolution_clock> last_set_walk_time_;
     time_point<high_resolution_clock> last_set_upper_body_bag_time_;
+    time_point<high_resolution_clock> last_set_dest_joint_time_;
 
 
 public:

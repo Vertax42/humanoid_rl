@@ -2,15 +2,17 @@ freq: 20
 command_type: hat # joy | hat
 float_pubs:
   - topic_name: start_control
-    buttons: [7] # Start button
+    buttons: [11] # ☝ button
   - topic_name: zero_mode
     buttons: [1] # B
   - topic_name: stand_mode
     buttons: [0] # A
   - topic_name: walk_mode
     buttons: [2] # X
-  - topic_name: /play_trigger
+  - topic_name: /play_bag_trigger
     buttons: [6] # select button
+  - topic_name: /dest_joint_trigger
+    buttons: [7] # start button
 reset_pubs:
   - buttons: [3] # Y for reset vel_cmd
 twist_pubs:

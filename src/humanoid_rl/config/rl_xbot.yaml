@@ -4,7 +4,9 @@ sub_state_machine_start_name: /start_control
 sub_state_machine_zero_name: /zero_mode
 sub_state_machine_stand_name: /stand_mode
 sub_state_machine_walk_name: /walk_mode
-sub_trigger_upper_body_bag_name: /play_trigger
+
+sub_trigger_upper_body_bag_name: /play_bag_trigger
+sub_trigger_dest_joint_name: /dest_joint_trigger
 
 sub_controllers_policy_output_name: /controllers/xbot_controller/policy_output
 # sub_controllers_joints_from_bag_name: /RXjoint_states
@@ -291,9 +293,11 @@ control_conf:
     bag_name: "left_bye_filtered.bag"
     bag_topic: /joint_states
     bag_rate: 1.0
+    upper_body_dest_pos: [0, 0, 0, 0, 0, 0, 0, 0.5, 0, 0, -0.5, 0, -0.6, 0] # 14 dims
+    dest_reach_duration: 3 # 3s
   obs_scales:
-    lin_vel: 1
-    ang_vel: 1
+    lin_vel: 1.
+    ang_vel: 1.
     dof_pos: 1.
     dof_vel: 0.05
     quat: 1.
