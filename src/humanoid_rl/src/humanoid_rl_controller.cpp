@@ -838,9 +838,13 @@ void HumanoidRLController::HandleWalkMode()
             // get current frame joint states
             const auto &frame = bag_seq_->GetFrameJointStates(current_bag_frame_);
             // apply to upper body joints
-            for(int i = 0; i < control_config_.robot_config.arm_joints_num; i++)
+            for(int i = 0; i < control_config_.robot_config.upper_body_joints_num; i++)
             {
-                std::string joint_name = control_config_.ordered_arm_joint_names[i];
+                std::string joint_name = control_config_.ordered_joint_names[i];
+                if((joint_name == "neck_yaw_joint") || (joint_name == "neck_pitch_joint")
+                   || (joint_name == "waist_yaw_joint")
+                   || (joint_name == "waist_roll_joint")) // jump skip neck and waist joints
+                    continue;
                 auto it = frame.find(joint_name);
 
                 if(it != frame.end())
@@ -868,9 +872,13 @@ void HumanoidRLController::HandleWalkMode()
         if(reach_dest_joint_ && dest_joint_mode_percentage_ <= 1.0)
         {
             // moving from default to destination joint pos
-            for(int i = 0; i < control_config_.robot_config.arm_joints_num; i++)
+            for(int i = 0; i < control_config_.robot_config.upper_body_joints_num; i++)
             {
-                std::string joint_name = control_config_.ordered_arm_joint_names[i];
+                std::string joint_name = control_config_.ordered_joint_names[i];
+                if((joint_name == "neck_yaw_joint") || (joint_name == "neck_pitch_joint")
+                   || (joint_name == "waist_yaw_joint")
+                   || (joint_name == "waist_roll_joint")) // jump skip neck and waist joints
+                    continue;
                 double pos_des
                     = current_joint_pos_(i) * (1 - dest_joint_mode_percentage_)
                       + dest_joint_mode_percentage_ * control_config_.bag_config.upper_body_dest_pos[joint_name];
@@ -883,9 +891,13 @@ void HumanoidRLController::HandleWalkMode()
         } else if(!reach_dest_joint_ && dest_joint_mode_percentage_ > 0.0)
         {
             // moving from current joint pos to default joint pos
-            for(int i = 0; i < control_config_.robot_config.arm_joints_num; i++)
+            for(int i = 0; i < control_config_.robot_config.upper_body_joints_num; i++)
             {
-                std::string joint_name = control_config_.ordered_arm_joint_names[i];
+                std::string joint_name = control_config_.ordered_joint_names[i];
+                if((joint_name == "neck_yaw_joint") || (joint_name == "neck_pitch_joint")
+                   || (joint_name == "waist_yaw_joint")
+                   || (joint_name == "waist_roll_joint")) // jump skip neck and waist joints
+                    continue;
                 double pos_des = current_joint_pos_(i) * (1 - dest_joint_mode_percentage_)
                                  + dest_joint_mode_percentage_ * control_config_.joint_conf["init_state"][joint_name];
                 pos_des_cmd_[i] = pos_des;
