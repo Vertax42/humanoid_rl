@@ -61,6 +61,7 @@ bool HumanoidRLBag::LoadBag()
                 for(size_t i = 0; i < joint_state_msg->name.size(); ++i)
                 {
                     frame[joint_state_msg->name[i]] = joint_state_msg->position[i];
+                    // LOGFMTD("frame[%s] = %f", joint_state_msg->name[i].c_str(), joint_state_msg->position[i]);
                 }
                 pos_frames_.push_back(frame);
             } else
@@ -70,58 +71,70 @@ bool HumanoidRLBag::LoadBag()
             }
         }
 
+        bag.close();
+        LOGFMTI("Loaded %zu frames from bag file %s, duration: %.2f seconds", pos_frames_.size(), bag_file_.c_str(),
+                duration_);
+
         if(!pos_frames_.empty() && playback_rate_ > 0.0)
         {
 
-            const double transition_time = 2.0; // 2s for transition from last frame to zero frame
-            int transition_frames = static_cast<int>(transition_time * 100); // 2 seconds * 100Hz
+            int transition_frames = 200; // playback_rate_ seconds * 100Hz
+
             // caculate how many frames we should have for smooth looping
-            int total_frames = pos_frames_.size();
-            int target_frames = playback_rate_;
+            int total_frames = static_cast<int>(pos_frames_.size());
+            int target_frames = static_cast<int>(playback_rate_);
 
             // find the number of frames needed to make total divisible by playback rate
-            int new_total_frames = total_frames + transition_frames;
-            int remainder = new_total_frames % target_frames;
-            int add_frames = remainder == 0 ? transition_frames : transition_frames + (target_frames - remainder);
+
+            int remainder = total_frames % target_frames;
+            int alignment_frames = remainder == 0 ? 0 : target_frames - remainder;
+            int add_alignment_frames = total_frames + alignment_frames;
 
             // add enough frames to make total divisible by playback rate
             LOGFMTI("Adding %d frames (%d transition frames + %d alignment frames) to smoothly return to zero",
-                    add_frames, transition_frames, add_frames - transition_frames);
+                    add_alignment_frames, transition_frames, alignment_frames);
 
-            // get last frame data
-            const auto &last_frame = pos_frames_.back();
-            // create new zero frame
-            std::map<std::string, double> zero_frame;
-            for(const auto &joint : last_frame)
+
+            if(alignment_frames > 0)
             {
-                zero_frame[joint.first] = 0.0;
+                for(int i = 0; i < alignment_frames; ++i)
+                {
+                    pos_frames_.push_back(pos_frames_.back());
+                }
             }
 
+            // get last frame data
+            const auto &start_frame = pos_frames_.back();
+            LOGFMTW("After alignment, pos_frames_.size(): %zu, add_alignment_frames: %d", pos_frames_.size(),
+                    add_alignment_frames);
+
             // create and add interpolated frames
-            for(int i = 1; i <= add_frames; ++i)
+            for(int i = 1; i <= transition_frames; ++i)
             {
-                double factor = static_cast<double>(i) / static_cast<double>(add_frames + 1);
+                double factor = static_cast<double>(i) / static_cast<double>(transition_frames);
 
                 // interpolate between last frame and zero frame
                 std::map<std::string, double> interp_frame;
-                for(const auto &joint : last_frame)
+
+                for(const auto &joint : start_frame)
                 {
                     std::string joint_name = joint.first;
-                    double startValue = last_frame.at(joint_name);
-                    double endValue = zero_frame.at(joint_name); // must be 0.0
+                    double startValue = joint.second;
+                    double endValue = 0.0; // must be 0.0
 
                     // linear interpolation
                     double interpolatedValue = startValue * (1.0 - factor) + endValue * factor;
                     interp_frame[joint_name] = interpolatedValue;
+                    LOGFMTD("Interpolated frame %d: %s = %f, startValue: %f, endValue: %f, factor: %f", i,
+                            joint_name.c_str(), interpolatedValue, startValue, endValue, factor);
                 }
 
                 // add interpolated frame to pos_frames_
                 pos_frames_.push_back(interp_frame);
+                LOGFMTD("Interpolated frame %d: %zu", i, pos_frames_.size());
             }
         }
-        bag.close();
-        LOGFMTI("Loaded %zu frames from bag file %s, duration: %.2f seconds", pos_frames_.size(), bag_file_.c_str(),
-                duration_);
+
 
         if(!ResampleFrames())
         {
@@ -145,9 +158,12 @@ bool HumanoidRLBag::ResampleFrames()
         return false;
     }
 
+
     ori_pos_frames_.clear();
     ori_pos_frames_ = pos_frames_;
     pos_frames_.clear();
+
+
     // every playback_rate_ frames, add one frame to ori_pos_frames_
     for(size_t i = 0; i < ori_pos_frames_.size(); i += playback_rate_)
     {
