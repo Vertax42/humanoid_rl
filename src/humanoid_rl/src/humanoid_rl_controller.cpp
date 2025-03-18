@@ -874,21 +874,13 @@ void HumanoidRLController::HandleWalkMode()
             // moving from default to destination joint pos
             for(int i = 0; i < control_config_.robot_config.upper_body_joints_num; i++)
             {
-                std::string joint_name = control_config_.ordered_joint_names[i];
-                if((joint_name == "neck_yaw_joint") || (joint_name == "neck_pitch_joint")
-                   || (joint_name == "waist_yaw_joint")
-                   || (joint_name == "waist_roll_joint")) // jump skip neck and waist joints
-                {
-                    pos_des_cmd_[i] = 0;
-                } else
-                {
-                    double pos_des
-                        = current_upper_body_joint_pos_(i) * (1 - dest_joint_mode_percentage_)
-                          + dest_joint_mode_percentage_ * control_config_.bag_config.upper_body_dest_pos[joint_name];
-                    pos_des_cmd_[i] = pos_des;
-                    LOGFMTA("Add dest joint data to upper body joint: %s, index: %d, pos_des: %f", joint_name.c_str(),
-                            i, pos_des_cmd_[i]);
-                }
+                std::string upper_body_joint_name = control_config_.ordered_joint_names[i];
+                double pos_des
+                    = current_upper_body_joint_pos_(i) * (1 - dest_joint_mode_percentage_)
+                      + dest_joint_mode_percentage_ * control_config_.bag_config.upper_body_dest_pos[upper_body_joint_name];
+                pos_des_cmd_[i] = pos_des;
+                LOGFMTA("Add dest joint data to upper body joint: %s, index: %d, pos_des: %f", upper_body_joint_name.c_str(), i,
+                        pos_des_cmd_[i]);
             }
             dest_joint_mode_percentage_ += 1 / dest_reach_duration_cycle_;
             dest_joint_mode_percentage_ = std::min(dest_joint_mode_percentage_, 1.0);
@@ -897,26 +889,17 @@ void HumanoidRLController::HandleWalkMode()
             // moving from current joint pos to default joint pos
             for(int i = 0; i < control_config_.robot_config.upper_body_joints_num; i++)
             {
-                std::string joint_name = control_config_.ordered_joint_names[i];
-                if((joint_name == "neck_yaw_joint") || (joint_name == "neck_pitch_joint")
-                   || (joint_name == "waist_yaw_joint")
-                   || (joint_name == "waist_roll_joint")) // jump skip neck and waist joints
-                {
-                    pos_des_cmd_[i] = 0;
-                } else
-                {
-                    LOGFMTD("current_upper_body_joint_pos_(%d): %f", i, current_upper_body_joint_pos_(i));
-                    LOGFMTD("control_config_.joint_conf[\"init_state\"][%s]: %f", joint_name.c_str(),
-                            control_config_.joint_conf["init_state"][joint_name]);
-                    LOGFMTD("dest_joint_mode_percentage_: %f", dest_joint_mode_percentage_);
-
-                    double pos_des
-                        = current_upper_body_joint_pos_(i) * dest_joint_mode_percentage_
-                          + (1 - dest_joint_mode_percentage_) * control_config_.joint_conf["init_state"][joint_name];
-                    pos_des_cmd_[i] = pos_des;
-                    LOGFMTA("Add default joint data to upper body joint: %s, index: %d, pos_des: %f",
-                            joint_name.c_str(), i, pos_des_cmd_[i]);
-                }
+                std::string upper_body_joint_name = control_config_.ordered_joint_names[i];
+                // LOGFMTD("current_upper_body_joint_pos_(%d): %f", i, current_upper_body_joint_pos_(i));
+                // LOGFMTD("control_config_.joint_conf[\"init_state\"][%s]: %f", joint_name.c_str(),
+                //         control_config_.joint_conf["init_state"][joint_name]);
+                // LOGFMTD("dest_joint_mode_percentage_: %f", dest_joint_mode_percentage_);
+                double pos_des
+                    = current_upper_body_joint_pos_(i) * dest_joint_mode_percentage_
+                      + (1 - dest_joint_mode_percentage_) * control_config_.joint_conf["init_state"][upper_body_joint_name];
+                pos_des_cmd_[i] = pos_des;
+                LOGFMTA("Add default joint data to upper body joint: %s, index: %d, pos_des: %f", upper_body_joint_name.c_str(), i,
+                        pos_des_cmd_[i]);
             }
             dest_joint_mode_percentage_ -= 1 / dest_reach_duration_cycle_;
             dest_joint_mode_percentage_ = std::max(dest_joint_mode_percentage_, 0.0);

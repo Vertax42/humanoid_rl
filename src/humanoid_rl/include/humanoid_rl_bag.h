@@ -16,6 +16,7 @@ public:
     ~HumanoidRLBag();
 
     bool LoadBag();
+    bool ResampleFrames();
     const std::map<std::string, double> &GetFrameJointStates(size_t frame_index) const;
 
     const std::vector<std::map<std::string, double> > &GetPosFrames() const;
@@ -29,8 +30,10 @@ private:
     std::string bag_file_;
     std::string topic_name_;
     std::vector<std::map<std::string, double> > pos_frames_;
-    std::vector<std::map<std::string, double> > vel_frames_;
-    std::vector<std::map<std::string, double> > tau_frames_;
+    std::vector<std::map<std::string, double> > ori_pos_frames_;
+
+    // std::vector<std::map<std::string, double> > vel_frames_; // TODO: add vel_frames_
+    // std::vector<std::map<std::string, double> > tau_frames_; // TODO: add tau_frames_
     double duration_;
     double playback_rate_;
 };

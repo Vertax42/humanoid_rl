@@ -2,7 +2,7 @@ freq: 20
 command_type: hat # joy | hat
 float_pubs:
   - topic_name: start_control
-    buttons: [11] # ☝ button
+    buttons: [10] # Z button
   - topic_name: zero_mode
     buttons: [1] # B
   - topic_name: stand_mode

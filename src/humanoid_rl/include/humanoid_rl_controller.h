@@ -92,7 +92,7 @@ struct ControlConfig {
         std::string bag_name;
         std::string bag_topic;
         double bag_rate;
-        std::map<std::string, double> upper_body_dest_pos; // destination position for upper body joints
+        std::map<std::string, double> upper_body_dest_pos; // destination position for upper body joints 18 dof
         double dest_reach_duration_cycles;
     };
 
@@ -111,10 +111,10 @@ struct ControlConfig {
     };
 
     // joint_conf["init_state"/"stiffness"/"damping"][joint_name]
-    std::vector<std::string> ordered_obs_names;                       // observation names in order
-    std::vector<std::string> ordered_action_names;                    // action names in order
-    std::vector<std::string> ordered_arm_joint_names;                 // arm joint names in order with necks and waists
-    std::vector<std::string> ordered_joint_names;                     // joint names in order
+    std::vector<std::string> ordered_obs_names;         // observation names in order
+    std::vector<std::string> ordered_action_names;      // action names in order
+    std::vector<std::string> ordered_upper_joint_names; // upper body joint names in order with necks and waists
+    std::vector<std::string> ordered_joint_names;       // joint names in order
     std::map<std::string, std::map<std::string, double> > joint_conf; // joint configuration
     ObsConfig obs_config;                                             // observation configuration
     RobotConfig robot_config;                                         // robot configuration

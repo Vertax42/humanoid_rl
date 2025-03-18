@@ -292,8 +292,27 @@ control_conf:
   bag_conf:
     bag_name: "left_bye_filtered.bag"
     bag_topic: /joint_states
-    bag_rate: 1.0
-    upper_body_dest_pos: [0, 0, 0, 0, 0, 0, 0, 0.5, 0, 0, -0.5, 0, -0.6, 0] # 14 dims
+    bag_rate: 2.0
+    upper_body_dest_pos: [
+        0, # left_shoulder_pitch_joint
+        0, # left_shoulder_roll_joint
+        0, # left_arm_yaw_joint
+        0, # left_elbow_pitch_joint
+        0, # left_elbow_yaw_joint
+        0, # left_wrist_roll_joint
+        0, # left_wrist_yaw_joint
+        0, # neck_yaw_joint
+        0, # neck_pitch_joint
+        0.5, # right_shoulder_pitch_joint
+        0, # right_shoulder_roll_joint
+        0, # right_arm_yaw_joint
+        -0.5, # right_elbow_pitch_joint
+        0, # right_elbow_yaw_joint
+        -0.6, # left_wrist_roll_joint
+        0, # left_wrist_yaw_joint
+        0, # waist_yaw_joint
+        0, # waist_roll_joint
+      ] # 18 dims
     dest_reach_duration: 3 # 3s
   obs_scales:
     lin_vel: 1.

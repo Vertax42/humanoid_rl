@@ -86,9 +86,17 @@ bool HumanoidRLInference::Init()
         freq_ = cfg_node["control_frequency"].as<int32_t>();
         LOGD("Loaded freq_");
         // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ init controller ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
-
-        // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ joint_conf ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
         ControlConfig control_conf;
+        // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ robot_conf ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+        control_conf.robot_config.total_joints_num
+            = cfg_node["control_conf"]["robot_conf"]["total_joints_num"].as<int>();
+        control_conf.robot_config.arm_joints_num = cfg_node["control_conf"]["robot_conf"]["arm_joints_num"].as<int>();
+        control_conf.robot_config.upper_body_joints_num
+            = cfg_node["control_conf"]["robot_conf"]["upper_body_joints_num"].as<int>();
+        control_conf.robot_config.leg_joints_num = cfg_node["control_conf"]["robot_conf"]["leg_joints_num"].as<int>();
+        LOGD("Loaded robot_config");
+        // ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
+        // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ joint_conf ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
         control_conf.joint_conf["init_state"]
             = cfg_node["control_conf"]["joint_conf"]["init_state"].as<std::map<std::string, double> >();
         control_conf.joint_conf["stiffness"]
@@ -130,28 +138,14 @@ bool HumanoidRLInference::Init()
         }
         LOGD("Loaded ordered_joint_names");
 
-        // ordered_arm_joint_names
-        control_conf.ordered_arm_joint_names.clear();
-        for(auto iter = cfg_node["control_conf"]["joint_conf"]["init_state"].begin();
-            iter != cfg_node["control_conf"]["joint_conf"]["init_state"].end(); iter++)
+        // ordered_upper_joint_names
+        control_conf.ordered_upper_joint_names.clear();
+        for(int i = 0; i < control_conf.robot_config.upper_body_joints_num; i++)
         {
-            if(isArmJoint(iter->first.as<std::string>()))
-            {
-                control_conf.ordered_arm_joint_names.push_back(iter->first.as<std::string>());
-                // LOGFMTD("Arm joint name: %s", iter->first.as<std::string>().c_str());
-            }
+            control_conf.ordered_upper_joint_names.push_back(control_conf.ordered_joint_names[i]);
         }
 
-        LOGD("Loaded ordered_arm_joint_names");
-        // ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
-        // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ robot_conf ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
-        control_conf.robot_config.total_joints_num
-            = cfg_node["control_conf"]["robot_conf"]["total_joints_num"].as<int>();
-        control_conf.robot_config.arm_joints_num = cfg_node["control_conf"]["robot_conf"]["arm_joints_num"].as<int>();
-        control_conf.robot_config.upper_body_joints_num
-            = cfg_node["control_conf"]["robot_conf"]["upper_body_joints_num"].as<int>();
-        control_conf.robot_config.leg_joints_num = cfg_node["control_conf"]["robot_conf"]["leg_joints_num"].as<int>();
-        LOGD("Loaded robot_config");
+        LOGD("Loaded ordered_upper_joint_names");
         // ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
         // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ bag_conf ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
         control_conf.bag_config.bag_name
@@ -162,14 +156,14 @@ bool HumanoidRLInference::Init()
         for(size_t i = 0; i < cfg_node["control_conf"]["bag_conf"]["upper_body_dest_pos"].size(); i++)
         {
             if(cfg_node["control_conf"]["bag_conf"]["upper_body_dest_pos"].size()
-               != control_conf.ordered_arm_joint_names.size())
+               != control_conf.ordered_upper_joint_names.size())
             {
                 LOGFMTE("upper_body_dest_pos size mismatch, expected: %zu, got: %zu",
-                        control_conf.ordered_arm_joint_names.size(),
+                        control_conf.ordered_upper_joint_names.size(),
                         cfg_node["control_conf"]["bag_conf"]["upper_body_dest_pos"].size());
                 return false;
             }
-            std::string arm_joint_name = control_conf.ordered_arm_joint_names[i];
+            std::string arm_joint_name = control_conf.ordered_upper_joint_names[i];
             control_conf.bag_config.upper_body_dest_pos[arm_joint_name]
                 = cfg_node["control_conf"]["bag_conf"]["upper_body_dest_pos"][i].as<double>();
             LOGFMTD("upper_body_dest_pos[%zu]: %s, %f", i, arm_joint_name.c_str(),
@@ -470,20 +464,8 @@ void HumanoidRLInference::destJointTriggerCallback(const std_msgs::Bool::ConstPt
                     i < static_cast<size_t>(rl_controller_->control_config_.robot_config.upper_body_joints_num); ++i)
                 {
                     std::string upper_body_joint_name = rl_controller_->control_config_.ordered_joint_names[i];
-                    if(i == 9)
-                    {
-                        rl_controller_->current_upper_body_joint_pos_(i) = 0.5;
-                    } else if(i == 12)
-                    {
-                        rl_controller_->current_upper_body_joint_pos_(i) = -0.5;
-                    } else if(i == 14)
-                    {
-                        rl_controller_->current_upper_body_joint_pos_(i) = -0.6;
-                    } else
-                    {
-                        rl_controller_->current_upper_body_joint_pos_(i) = 0;
-                    }
-
+                    rl_controller_->current_upper_body_joint_pos_(i)
+                        = rl_controller_->control_config_.bag_config.upper_body_dest_pos[upper_body_joint_name];
                     LOGFMTD("upper_body_joint_name: %s, index: %ld, pos: %f", upper_body_joint_name.c_str(), i,
                             rl_controller_->current_upper_body_joint_pos_(i));
                 }
@@ -617,9 +599,9 @@ bool HumanoidRLInference::PrintControlConfig(const ControlConfig &config)
     LOGD("=============================================================");
 
     LOGD("Loaded arm joint names:");
-    for(size_t i = 0; i < config.ordered_arm_joint_names.size(); ++i)
+    for(size_t i = 0; i < config.ordered_upper_joint_names.size(); ++i)
     {
-        LOGFMTD("Arm joint name: %s, index: %ld", config.ordered_arm_joint_names[i].c_str(), i);
+        LOGFMTD("Arm joint name: %s, index: %ld", config.ordered_upper_joint_names[i].c_str(), i);
     }
     LOGD("=============================================================");
 
