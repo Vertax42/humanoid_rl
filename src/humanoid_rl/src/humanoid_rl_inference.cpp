@@ -404,8 +404,8 @@ void HumanoidRLInference::upperBodyBagCallback(const std_msgs::Bool::ConstPtr &m
                 rl_controller_->use_bag_for_upper_body_);
         // double bag_duration = rl_controller_->bag_seq_->GetDuration();
         // LOGFMTD("Bag duration: %f", bag_duration);
-        double bag_rate = rl_controller_->bag_seq_->GetPlaybackRate();
-        LOGFMTD("Bag rate: %f", bag_rate);
+        // double bag_rate = rl_controller_->bag_seq_->GetPlaybackRate();
+        // LOGFMTD("Bag rate: %f", bag_rate);
         size_t num_frames = rl_controller_->bag_seq_->GetFrameNum();
         LOGFMTD("Bag frame number: %zu", num_frames);
     } else

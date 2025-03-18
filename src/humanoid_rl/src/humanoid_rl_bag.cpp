@@ -107,20 +107,12 @@ bool HumanoidRLBag::LoadBag()
                 for(const auto &joint : last_frame)
                 {
                     std::string joint_name = joint.first;
-                    if(zero_frame.find(joint_name) != zero_frame.end())
-                    {
-                        double startValue = last_frame.at(joint_name);
-                        double endValue = zero_frame.at(joint_name);
+                    double startValue = last_frame.at(joint_name);
+                    double endValue = zero_frame.at(joint_name); // must be 0.0
 
-                        // smooth transition
-                        double smooth_factor = (1.0 - std::cos(factor * M_PI)) / 2.0;
-                        double interpolatedValue = startValue * (1.0 - smooth_factor) + endValue * smooth_factor;
-                        interp_frame[joint_name] = interpolatedValue;
-                    } else
-                    {
-                        // if joint does not exist in zero frame, use last frame value
-                        interp_frame[joint_name] = joint.second;
-                    }
+                    // linear interpolation
+                    double interpolatedValue = startValue * (1.0 - factor) + endValue * factor;
+                    interp_frame[joint_name] = interpolatedValue;
                 }
 
                 // add interpolated frame to pos_frames_
@@ -151,13 +143,6 @@ bool HumanoidRLBag::ResampleFrames()
     {
         LOGFMTD("Cannot resample frames: bag not loaded or playback rate is not set");
         return false;
-    }
-
-    if(!pos_frames_.empty() && playback_rate_ == 1.0)
-    {
-        LOGFMTD("Do not need to resample frames: playback rate is 1.0");
-        ori_pos_frames_ = pos_frames_;
-        return true;
     }
 
     ori_pos_frames_.clear();

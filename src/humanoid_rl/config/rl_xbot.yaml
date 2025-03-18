@@ -128,20 +128,20 @@ control_conf:
       right_elbow_yaw_joint: 200.
       right_wrist_roll_joint: 200.
       right_wrist_yaw_joint: 200.
-      waist_yaw_joint: 400.
-      waist_roll_joint: 400.
-      left_leg_roll_joint: 200.
-      left_leg_yaw_joint: 200.
-      left_leg_pitch_joint: 350.
-      left_knee_joint: 350.
-      left_ankle_pitch_joint: 15.
-      left_ankle_roll_joint: 15.
-      right_leg_roll_joint: 200.
-      right_leg_yaw_joint: 200.
-      right_leg_pitch_joint: 350.
-      right_knee_joint: 350.
-      right_ankle_pitch_joint: 15.
-      right_ankle_roll_joint: 15.
+      waist_yaw_joint: 800.
+      waist_roll_joint: 800.
+      left_leg_roll_joint: 220.
+      left_leg_yaw_joint: 220.
+      left_leg_pitch_joint: 380.
+      left_knee_joint: 380.
+      left_ankle_pitch_joint: 20.
+      left_ankle_roll_joint: 20.
+      right_leg_roll_joint: 220.
+      right_leg_yaw_joint: 220.
+      right_leg_pitch_joint: 380.
+      right_knee_joint: 380.
+      right_ankle_pitch_joint: 20.
+      right_ankle_roll_joint: 20.
     # KD
     damping:
       left_shoulder_pitch_joint: 10.
@@ -151,8 +151,8 @@ control_conf:
       left_elbow_yaw_joint: 10.
       left_wrist_roll_joint: 10.
       left_wrist_yaw_joint: 10.
-      neck_yaw_joint: 10.
-      neck_pitch_joint: 10.
+      neck_yaw_joint: 15.
+      neck_pitch_joint: 15.
       right_shoulder_pitch_joint: 10.
       right_shoulder_roll_joint: 10.
       right_arm_yaw_joint: 10.
@@ -160,20 +160,20 @@ control_conf:
       right_elbow_yaw_joint: 10.
       right_wrist_roll_joint: 10.
       right_wrist_yaw_joint: 10.
-      waist_yaw_joint: 10.
-      waist_roll_joint: 10.
-      left_leg_roll_joint: 10.0
-      left_leg_yaw_joint: 10.0
-      left_leg_pitch_joint: 10.0
-      left_knee_joint: 10.0
-      left_ankle_pitch_joint: 10.0
-      left_ankle_roll_joint: 10.0
-      right_leg_roll_joint: 10.0
-      right_leg_yaw_joint: 10.0
-      right_leg_pitch_joint: 10.0
-      right_knee_joint: 10.0
-      right_ankle_pitch_joint: 10.0
-      right_ankle_roll_joint: 10.0
+      waist_yaw_joint: 30.
+      waist_roll_joint: 30.
+      left_leg_roll_joint: 15.0
+      left_leg_yaw_joint: 15.0
+      left_leg_pitch_joint: 15.0
+      left_knee_joint: 15.0
+      left_ankle_pitch_joint: 15.0
+      left_ankle_roll_joint: 15.0
+      right_leg_roll_joint: 15.0
+      right_leg_yaw_joint: 15.0
+      right_leg_pitch_joint: 15.0
+      right_knee_joint: 15.0
+      right_ankle_pitch_joint: 15.0
+      right_ankle_roll_joint: 15.0
     # joint_limits
     upper_limit:
       left_shoulder_pitch_joint: 1.4
@@ -292,7 +292,7 @@ control_conf:
   bag_conf:
     bag_name: "left_bye_filtered.bag"
     bag_topic: /joint_states
-    bag_rate: 2.0
+    bag_rate: 1.0
     upper_body_dest_pos: [
         0, # left_shoulder_pitch_joint
         0, # left_shoulder_roll_joint
