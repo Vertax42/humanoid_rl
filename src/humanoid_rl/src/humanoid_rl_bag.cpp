@@ -104,7 +104,7 @@ bool HumanoidRLBag::LoadBag()
             }
 
             // get last frame data
-            const auto &start_frame = pos_frames_.back();
+            std::map<std::string, double> start_frame = pos_frames_.back();
             LOGFMTW("After alignment, pos_frames_.size(): %zu, add_alignment_frames: %d", pos_frames_.size(),
                     add_alignment_frames);
 
@@ -131,7 +131,7 @@ bool HumanoidRLBag::LoadBag()
 
                 // add interpolated frame to pos_frames_
                 pos_frames_.push_back(interp_frame);
-                LOGFMTD("Interpolated frame %d: %zu", i, pos_frames_.size());
+                LOGFMTD("Successfully interpolated frame %d: %zu", i, pos_frames_.size());
             }
         }
 
